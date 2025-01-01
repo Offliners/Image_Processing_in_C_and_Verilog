@@ -1,13 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-#define FUNC_FAIL 1
-#define FUNC_SUC  0
-
-#define RED_COLOR    "\033[0;31m"
-#define GREEN_COLOR  "\033[0;32m"
-#define YELLOW_COLOR "\033[0;33m"
-#define ENDL_COLOR   "\033[m"
+#include "com_type.h"
+#include "bmp_type.h"
 
 int check_img_exist(char *filename);
 
