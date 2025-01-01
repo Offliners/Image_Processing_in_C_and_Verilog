@@ -10,7 +10,6 @@
 #define BMP_IMPORTANT_COLORS 0
 #define BMP_BITS_PER_PIXEL   24
 #define BMP_BITS_PER_BYTE    8
-#define BMP_BYTE_PER_LWORD   (sizeof(LWORD))
 
 
 // BMP format

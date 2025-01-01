@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "common.h"
 #include "bmp_type.h"
 
 BMPImage *read_bmp(FILE *fp, LWORD *error_record)
@@ -115,7 +116,7 @@ LWORD get_image_row_size_bytes(BMPHeader *bmp_header)
 
 LWORD padding_byte(BMPHeader *bmp_header)
 {
-    return (BMP_BYTE_PER_LWORD - (bmp_header->stBMPInfoHeader.u32ImageWidth * get_bytes_per_pixel(bmp_header)) % BMP_BYTE_PER_LWORD) % BMP_BYTE_PER_LWORD;
+    return (LWORD_SIZE - (bmp_header->stBMPInfoHeader.u32ImageWidth * get_bytes_per_pixel(bmp_header)) % LWORD_SIZE) % LWORD_SIZE;
 }
 
 LWORD get_bytes_per_pixel(BMPHeader *bmp_header)

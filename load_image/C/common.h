@@ -13,4 +13,6 @@ typedef unsigned char  BYTE;
 typedef unsigned short WORD;
 typedef unsigned int   LWORD;
 
+#define LWORD_SIZE   (sizeof(LWORD))
+
 #endif

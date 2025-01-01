@@ -2,4 +2,4 @@
 
 
 ## Outline
-*  [Read/Write Image](./read_write_image/README.md)
+*  [Load Image](./load_image/README.md)
