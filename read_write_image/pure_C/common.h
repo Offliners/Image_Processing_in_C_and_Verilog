@@ -1,5 +1,5 @@
-#ifndef _COM_TYPE_H_
-#define _COM_TYPE_H_
+#ifndef _COMMON_H_
+#define _COMMON_H_
 
 #define FUNC_FAIL 1
 #define FUNC_SUC  0

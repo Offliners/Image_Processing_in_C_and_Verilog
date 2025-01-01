@@ -3,16 +3,11 @@
 
 #include "com_type.h"
 
-typedef struct BMP_FILE_HEADER {
-    LWORD signature;
-    LWORD file_size;
-    WORD  reserved1;
-    WORD  reserved2;
-    LWORD pixel_array_offset;
-} bmp_file_header;
-
-typedef struct BMP_
-
-
+#pragma pack(push)
+#pragma pack(1)
+typedef struct {
+    
+} BMPHeader;
+#pragma pack(pop)
 
 #endif
