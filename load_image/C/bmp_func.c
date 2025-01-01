@@ -54,6 +54,7 @@ BMPImage *read_bmp(FILE *fp, LWORD *error_record)
     if(!error_checker(num_fread == 1, error_record, ERROR_CANNOT_READ_PIXEL_DATA, __LINE__))
         return NULL;
 
+    // Show basic image information
     printf("=== Image Info ===\n");
     printf("size (Byte): %d\n", img->header.stBMPFileHeader.u32FileSize);
     printf("height     : %d\n", img->header.stBMPInfoHeader.u32ImageHeight);
