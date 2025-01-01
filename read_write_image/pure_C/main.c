@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
         return FUNC_FAIL;
     }
     else
-        printf(GREEN_COLOR "Image found!\n" ENDL_COLOR);
+        printf(GREEN_COLOR "Image found!\n\n" ENDL_COLOR);
 
     BYTE u08Ret = FUNC_SUC;
     BMPImage *img = read_image(argv[1]);
