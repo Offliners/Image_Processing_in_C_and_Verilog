@@ -71,6 +71,8 @@ typedef struct {
 // Error handler
 typedef enum {
     NO_ERROR,
+
+    // Read error handler
     ERROR_NOT_ENOUGH_MEMORY,
     ERROR_CANNOT_READ_BMP_HEADER,
     ERROR_INVALID_BMP_SIGNATURE,
@@ -83,6 +85,11 @@ typedef enum {
     ERROR_WRONG_BMP_BITS_PER_PIXEL,
     ERROR_WRONG_BMP_FILE_SIZE,
     ERROR_WRONG_BMP_IMAGE_SIZE,
+    ERROR_CANNOT_READ_PIXEL_DATA,
+
+    // Write error handler
+    ERROR_CANNOT_WRITE_BMP_HEADER,
+    ERROR_CANNOT_WRITE_BMP_IMAGE,
     ERROR_END
 } ErrorType;
 
@@ -93,6 +100,8 @@ typedef struct {
 
 static Error_Message error_table[ERROR_END] = {
     [NO_ERROR]                          = {.error_type = (0),       .error_message = "No error"},
+    
+    // Read error handler
     [ERROR_NOT_ENOUGH_MEMORY]           = {.error_type = (1 << 0),  .error_message = "Not enough memory"},
     [ERROR_CANNOT_READ_BMP_HEADER]      = {.error_type = (1 << 1),  .error_message = "Cannot read BMP header"},
     [ERROR_INVALID_BMP_SIGNATURE]       = {.error_type = (1 << 2),  .error_message = "Invalid BMP signature"},
@@ -104,16 +113,23 @@ static Error_Message error_table[ERROR_END] = {
     [ERROR_WRONG_BMP_IMPORTANT_COLORS]  = {.error_type = (1 << 8),  .error_message = "Wrong BMP important colors"},
     [ERROR_WRONG_BMP_BITS_PER_PIXEL]    = {.error_type = (1 << 9),  .error_message = "Wrong BMP bits per pixel"},
     [ERROR_WRONG_BMP_FILE_SIZE]         = {.error_type = (1 << 10), .error_message = "Wrong BMP file size"},
-    [ERROR_WRONG_BMP_IMAGE_SIZE]        = {.error_type = (1 << 11), .error_message = "Wrong BMP image size"}
+    [ERROR_WRONG_BMP_IMAGE_SIZE]        = {.error_type = (1 << 11), .error_message = "Wrong BMP image size"},
+    [ERROR_CANNOT_READ_PIXEL_DATA]      = {.error_type = (1 << 12), .error_message = "Cannot read BMP pixel data"},
+    
+    // Write error handler
+    [ERROR_CANNOT_WRITE_BMP_HEADER]     = {.error_type = (1 << 13), .error_message = "Cannot write BMP header"},
+    [ERROR_CANNOT_WRITE_BMP_IMAGE]      = {.error_type = (1 << 14), .error_message = "Cannot write BMP image"}
 };
 
-
+// BMP operation
 BMPImage *read_bmp(FILE *fp, LWORD *error_record);
-int error_checker(int condition, LWORD *error_record, LWORD error);
+int error_checker(int condition, LWORD *error_record, LWORD error, int line);
 LWORD get_image_file_size(FILE *fp);
 LWORD get_image_size_by_bytes(BMPHeader *bmp_header);
 LWORD get_image_row_size_bytes(BMPHeader *bmp_header);
 LWORD padding_byte(BMPHeader *bmp_header);
 LWORD get_bytes_per_pixel(BMPHeader *bmp_header);
+int write_bmp(FILE *fp, BMPImage *img, LWORD *error_record);
+void free_bmp_image(BMPImage *img);
 
 #endif
