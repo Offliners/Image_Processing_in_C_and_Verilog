@@ -2,4 +2,4 @@
 
 
 ## Outline
-*  [Image Rotation](./image_rotation/README.md)
+*  [Read/Write Image](./read_write_image/README.md)

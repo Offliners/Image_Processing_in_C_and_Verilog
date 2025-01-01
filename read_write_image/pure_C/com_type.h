@@ -9,4 +9,8 @@
 #define YELLOW_COLOR "\033[0;33m"
 #define ENDL_COLOR   "\033[m"
 
+typedef unsigned char  BYTE;
+typedef unsigned short WORD;
+typedef unsigned int   LWORD;
+
 #endif
