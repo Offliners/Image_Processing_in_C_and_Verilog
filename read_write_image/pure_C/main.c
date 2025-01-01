@@ -21,6 +21,10 @@ int main(int argc, char *argv[])
     else
         printf(GREEN_COLOR "Image found!\n" ENDL_COLOR);
 
+    LWORD error_record = 0;
+    FILE *fp = fopen(argv[1], "rb");
+    BMPImage *img = read_bmp(fp, &error_record);
+
     return FUNC_SUC;
 }
 

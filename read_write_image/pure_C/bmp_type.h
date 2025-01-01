@@ -3,6 +3,16 @@
 
 #include "common.h"
 
+#define BMP_MAGIC_NUMBER     0x4d42  // 0x4d is "M" and 0x42 is "B"
+#define BMP_NUM_PLANE        1
+#define BMP_COMPRESSION      0
+#define BMP_NUM_COLORS       0
+#define BMP_IMPORTANT_COLORS 0
+#define BMP_BITS_PER_PIXEL   24
+#define BMP_BITS_PER_BYTE    8
+
+
+// BMP format
 #pragma pack(push)
 #pragma pack(1)
 typedef struct {
@@ -62,6 +72,8 @@ typedef enum {
     NO_ERROR,
     ERROR_NOT_ENOUGH_MEMORY,
     ERROR_CANNOT_READ_BMP_HEADER,
+    ERROR_INVALID_BMP_SIGNATURE,
+    ERROR_WRONG_BMP_HEADER_SIZE,
     ERROR_END
 } ErrorType;
 
@@ -73,7 +85,13 @@ typedef struct {
 static Error_Message error_table[ERROR_END] = {
     [NO_ERROR]                     = {.error_type = (0),      .error_message = "No error"},
     [ERROR_NOT_ENOUGH_MEMORY]      = {.error_type = (1 << 0), .error_message = "Not enough memory"},
-    [ERROR_CANNOT_READ_BMP_HEADER] = {.error_type = (1 << 1), .error_message = "Cannot read BMP header"}
+    [ERROR_CANNOT_READ_BMP_HEADER] = {.error_type = (1 << 1), .error_message = "Cannot read BMP header"},
+    [ERROR_INVALID_BMP_SIGNATURE]  = {.error_type = (1 << 2), .error_message = "Invalid BMP signature"},
+    [ERROR_WRONG_BMP_HEADER_SIZE]  = {.error_type = (1 << 3), .error_message = "Wrong BMP header size"}
 };
+
+
+BMPImage *read_bmp(FILE *fp, LWORD *error_record);
+int error_checker(int condition, LWORD *error_record, LWORD error);
 
 #endif
