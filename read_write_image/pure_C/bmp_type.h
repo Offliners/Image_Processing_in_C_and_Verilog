@@ -6,10 +6,11 @@
 #define BMP_MAGIC_NUMBER     0x4d42  // 0x4d is "M" and 0x42 is "B"
 #define BMP_NUM_PLANE        1
 #define BMP_COMPRESSION      0
-#define BMP_NUM_COLORS       0
+#define BMP_TOTAL_COLORS     0
 #define BMP_IMPORTANT_COLORS 0
 #define BMP_BITS_PER_PIXEL   24
 #define BMP_BITS_PER_BYTE    8
+#define BMP_BYTE_PER_LWORD   (sizeof(LWORD))
 
 
 // BMP format
@@ -74,6 +75,14 @@ typedef enum {
     ERROR_CANNOT_READ_BMP_HEADER,
     ERROR_INVALID_BMP_SIGNATURE,
     ERROR_WRONG_BMP_HEADER_SIZE,
+    ERROR_WRONG_BMP_INFO_HEADER_SIZE,
+    ERROR_WRONG_BMP_NUM_PLANE,
+    ERROR_WRONG_BMP_COMPRESSION,
+    ERROR_WRONG_BMP_TOTAL_COLORS,
+    ERROR_WRONG_BMP_IMPORTANT_COLORS,
+    ERROR_WRONG_BMP_BITS_PER_PIXEL,
+    ERROR_WRONG_BMP_FILE_SIZE,
+    ERROR_WRONG_BMP_IMAGE_SIZE,
     ERROR_END
 } ErrorType;
 
@@ -83,15 +92,28 @@ typedef struct {
 } Error_Message;
 
 static Error_Message error_table[ERROR_END] = {
-    [NO_ERROR]                     = {.error_type = (0),      .error_message = "No error"},
-    [ERROR_NOT_ENOUGH_MEMORY]      = {.error_type = (1 << 0), .error_message = "Not enough memory"},
-    [ERROR_CANNOT_READ_BMP_HEADER] = {.error_type = (1 << 1), .error_message = "Cannot read BMP header"},
-    [ERROR_INVALID_BMP_SIGNATURE]  = {.error_type = (1 << 2), .error_message = "Invalid BMP signature"},
-    [ERROR_WRONG_BMP_HEADER_SIZE]  = {.error_type = (1 << 3), .error_message = "Wrong BMP header size"}
+    [NO_ERROR]                          = {.error_type = (0),       .error_message = "No error"},
+    [ERROR_NOT_ENOUGH_MEMORY]           = {.error_type = (1 << 0),  .error_message = "Not enough memory"},
+    [ERROR_CANNOT_READ_BMP_HEADER]      = {.error_type = (1 << 1),  .error_message = "Cannot read BMP header"},
+    [ERROR_INVALID_BMP_SIGNATURE]       = {.error_type = (1 << 2),  .error_message = "Invalid BMP signature"},
+    [ERROR_WRONG_BMP_HEADER_SIZE]       = {.error_type = (1 << 3),  .error_message = "Wrong BMP header size"},
+    [ERROR_WRONG_BMP_INFO_HEADER_SIZE]  = {.error_type = (1 << 4),  .error_message = "Wrong BMP INFO header size"},
+    [ERROR_WRONG_BMP_NUM_PLANE]         = {.error_type = (1 << 5),  .error_message = "Wrong BMP number of plane"},
+    [ERROR_WRONG_BMP_COMPRESSION]       = {.error_type = (1 << 6),  .error_message = "Wrong BMP compression"},
+    [ERROR_WRONG_BMP_TOTAL_COLORS]      = {.error_type = (1 << 7),  .error_message = "Wrong BMP total colors"},
+    [ERROR_WRONG_BMP_IMPORTANT_COLORS]  = {.error_type = (1 << 8),  .error_message = "Wrong BMP important colors"},
+    [ERROR_WRONG_BMP_BITS_PER_PIXEL]    = {.error_type = (1 << 9),  .error_message = "Wrong BMP bits per pixel"},
+    [ERROR_WRONG_BMP_FILE_SIZE]         = {.error_type = (1 << 10), .error_message = "Wrong BMP file size"},
+    [ERROR_WRONG_BMP_IMAGE_SIZE]        = {.error_type = (1 << 11), .error_message = "Wrong BMP image size"}
 };
 
 
 BMPImage *read_bmp(FILE *fp, LWORD *error_record);
 int error_checker(int condition, LWORD *error_record, LWORD error);
+LWORD get_image_file_size(FILE *fp);
+LWORD get_image_size_by_bytes(BMPHeader *bmp_header);
+LWORD get_image_row_size_bytes(BMPHeader *bmp_header);
+LWORD padding_byte(BMPHeader *bmp_header);
+LWORD get_bytes_per_pixel(BMPHeader *bmp_header);
 
 #endif
