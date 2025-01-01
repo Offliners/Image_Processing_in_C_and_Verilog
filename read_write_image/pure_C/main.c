@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "com_type.h"
+#include "common.h"
 #include "bmp_type.h"
 
 int check_img_exist(char *filename);
@@ -18,6 +18,8 @@ int main(int argc, char *argv[])
         printf(RED_COLOR "Image not found!\n" ENDL_COLOR);
         return FUNC_FAIL;
     }
+    else
+        printf(GREEN_COLOR "Image found!\n" ENDL_COLOR);
 
     return FUNC_SUC;
 }
