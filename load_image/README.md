@@ -1,6 +1,10 @@
 # Load Image
 Read image from BMP (bitmap) file , and then write it into another.
 
+| Input                   | Output                  |
+| ----------------------- | ----------------------- |
+| ![input](./lena256.bmp) | ![output](./output.bmp) |
+
 ## Usage
 ```shell
 # C
