@@ -155,7 +155,6 @@ BMPImage *copy_bmp(BMPImage *img)
 {   
     LWORD error_record = 0;
     LWORD pixel_data_size = get_image_size_by_bytes(&img->header);
-    LWORD total_img_size = BMP_HEADER_SIZE + pixel_data_size;
     BMPImage *img_copy = (BMPImage*)malloc(sizeof(BMPImage));
     img_copy->p08Data = (BYTE*)malloc(pixel_data_size);
 
