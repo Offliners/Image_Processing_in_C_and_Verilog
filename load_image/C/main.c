@@ -25,9 +25,19 @@ int main(int argc, char *argv[])
 
     BYTE u08Ret = FUNC_SUC;
     BMPImage *img = read_image(argv[1]);
-    u08Ret |= write_image("output.bmp", img);
+
+    printf("Input Image\n");
+    show_bmp_info(img);
+
+    BMPImage *output_img = copy_bmp(img);
+
+    printf("Output Image\n");
+    show_bmp_info(output_img);
+
+    u08Ret |= write_image("output.bmp", output_img);
 
     free_bmp_image(img);
+    free_bmp_image(output_img);
 
     return u08Ret;
 }

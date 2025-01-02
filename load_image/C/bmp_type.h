@@ -11,7 +11,6 @@
 #define BMP_BITS_PER_PIXEL   24
 #define BMP_BITS_PER_BYTE    8
 
-
 // BMP format
 #pragma pack(push)
 #pragma pack(1)
@@ -86,6 +85,9 @@ typedef enum {
     ERROR_WRONG_BMP_IMAGE_SIZE,
     ERROR_CANNOT_READ_PIXEL_DATA,
 
+    // Copy error handler
+    ERROR_COPY_BMP_IMAGE_FAIL,
+
     // Write error handler
     ERROR_CANNOT_WRITE_BMP_HEADER,
     ERROR_CANNOT_WRITE_BMP_IMAGE,
@@ -94,7 +96,7 @@ typedef enum {
 
 typedef struct {
     LWORD error_type;
-    char * error_message;
+    char *error_message;
 } Error_Message;
 
 static Error_Message error_table[ERROR_END] = {
@@ -114,14 +116,18 @@ static Error_Message error_table[ERROR_END] = {
     [ERROR_WRONG_BMP_FILE_SIZE]         = {.error_type = (1 << 10), .error_message = "Wrong BMP file size"},
     [ERROR_WRONG_BMP_IMAGE_SIZE]        = {.error_type = (1 << 11), .error_message = "Wrong BMP image size"},
     [ERROR_CANNOT_READ_PIXEL_DATA]      = {.error_type = (1 << 12), .error_message = "Cannot read BMP pixel data"},
+
+    // Copy error handler
+    [ERROR_COPY_BMP_IMAGE_FAIL]         = {.error_type = (1 << 13), .error_message = "Cannot copy BMP image"},
     
     // Write error handler
-    [ERROR_CANNOT_WRITE_BMP_HEADER]     = {.error_type = (1 << 13), .error_message = "Cannot write BMP header"},
-    [ERROR_CANNOT_WRITE_BMP_IMAGE]      = {.error_type = (1 << 14), .error_message = "Cannot write BMP image"}
+    [ERROR_CANNOT_WRITE_BMP_HEADER]     = {.error_type = (1 << 14), .error_message = "Cannot write BMP header"},
+    [ERROR_CANNOT_WRITE_BMP_IMAGE]      = {.error_type = (1 << 15), .error_message = "Cannot write BMP image"}
 };
 
 // BMP operation
 BMPImage *read_bmp(FILE *fp, LWORD *error_record);
+void *bmp_header_check(const BMPImage *img, LWORD *error_record);
 int error_checker(int condition, LWORD *error_record, LWORD error, int line);
 LWORD get_image_file_size(FILE *fp);
 LWORD get_image_size_by_bytes(BMPHeader *bmp_header);
@@ -129,6 +135,8 @@ LWORD get_image_row_size_bytes(BMPHeader *bmp_header);
 LWORD padding_byte(BMPHeader *bmp_header);
 LWORD get_bytes_per_pixel(BMPHeader *bmp_header);
 int write_bmp(FILE *fp, BMPImage *img, LWORD *error_record);
+void show_bmp_info(const BMPImage *img);
+BMPImage *copy_bmp(BMPImage *img);
 void free_bmp_image(BMPImage *img);
 
 #endif
