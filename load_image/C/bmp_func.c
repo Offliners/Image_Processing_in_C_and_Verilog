@@ -38,28 +38,30 @@ BMPImage *read_bmp(FILE *fp, LWORD *error_record)
 
 void *bmp_header_check(const BMPImage *img, LWORD *error_record)
 {
-    if(!error_checker(img->header.stBMPFileHeader.u16FileType == BMP_MAGIC_NUMBER, error_record, ERROR_INVALID_BMP_SIGNATURE, __LINE__))
+    BMPFileHeader bmp_file_header = img->header.stBMPFileHeader;
+    if(!error_checker(bmp_file_header.u16FileType == BMP_MAGIC_NUMBER, error_record, ERROR_INVALID_BMP_SIGNATURE, __LINE__))
         return NULL;
 
-    if(!error_checker(img->header.stBMPFileHeader.u32PixelDataOffset == BMP_HEADER_SIZE, error_record, ERROR_WRONG_BMP_HEADER_SIZE, __LINE__))
+    if(!error_checker(bmp_file_header.u32PixelDataOffset == BMP_HEADER_SIZE, error_record, ERROR_WRONG_BMP_HEADER_SIZE, __LINE__))
         return NULL;
 
-    if(!error_checker(img->header.stBMPInfoHeader.u32HeaderSize == BMP_INFOHEADER_SIZE, error_record, ERROR_WRONG_BMP_INFO_HEADER_SIZE, __LINE__))
+    BMPInfoHeader bmp_info_header = img->header.stBMPInfoHeader;
+    if(!error_checker(bmp_info_header.u32HeaderSize == BMP_INFOHEADER_SIZE, error_record, ERROR_WRONG_BMP_INFO_HEADER_SIZE, __LINE__))
         return NULL;
 
-    if(!error_checker(img->header.stBMPInfoHeader.u16Planes == BMP_NUM_PLANE, error_record, ERROR_WRONG_BMP_NUM_PLANE, __LINE__))
+    if(!error_checker(bmp_info_header.u16Planes == BMP_NUM_PLANE, error_record, ERROR_WRONG_BMP_NUM_PLANE, __LINE__))
         return NULL;
 
-    if(!error_checker(img->header.stBMPInfoHeader.u32Compression == BMP_COMPRESSION, error_record, ERROR_WRONG_BMP_COMPRESSION, __LINE__))
+    if(!error_checker(bmp_info_header.u32Compression == BMP_COMPRESSION, error_record, ERROR_WRONG_BMP_COMPRESSION, __LINE__))
         return NULL;
 
-    if(!error_checker(img->header.stBMPInfoHeader.u32TotalColors == BMP_TOTAL_COLORS, error_record, ERROR_WRONG_BMP_TOTAL_COLORS, __LINE__))
+    if(!error_checker(bmp_info_header.u32TotalColors == BMP_TOTAL_COLORS, error_record, ERROR_WRONG_BMP_TOTAL_COLORS, __LINE__))
         return NULL;
 
-    if(!error_checker(img->header.stBMPInfoHeader.u32ImportantColors == BMP_IMPORTANT_COLORS, error_record, ERROR_WRONG_BMP_IMPORTANT_COLORS, __LINE__))
+    if(!error_checker(bmp_info_header.u32ImportantColors == BMP_IMPORTANT_COLORS, error_record, ERROR_WRONG_BMP_IMPORTANT_COLORS, __LINE__))
         return NULL;
 
-    if(!error_checker(img->header.stBMPInfoHeader.u16BitsPerPixel == BMP_BITS_PER_PIXEL, error_record, ERROR_WRONG_BMP_BITS_PER_PIXEL, __LINE__))
+    if(!error_checker(bmp_info_header.u16BitsPerPixel == BMP_BITS_PER_PIXEL, error_record, ERROR_WRONG_BMP_BITS_PER_PIXEL, __LINE__))
         return NULL;
 }
 
@@ -69,7 +71,7 @@ int error_checker(int condition, LWORD *error_record, LWORD error, int line)
     if(!condition)
     {
         is_valid = 0;
-        *error_record |= error_table[error].error_type;
+        *error_record = error_table[error].error_type;
         printf(RED_COLOR "FAIL at %d: %s\n" ENDL_COLOR, line, error_table[error].error_message);
     }
 

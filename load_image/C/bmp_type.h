@@ -103,26 +103,26 @@ static Error_Message error_table[ERROR_END] = {
     [NO_ERROR]                          = {.error_type = (0),       .error_message = "No error"},
     
     // Read error handler
-    [ERROR_NOT_ENOUGH_MEMORY]           = {.error_type = (1 << 0),  .error_message = "Not enough memory"},
-    [ERROR_CANNOT_READ_BMP_HEADER]      = {.error_type = (1 << 1),  .error_message = "Cannot read BMP header"},
-    [ERROR_INVALID_BMP_SIGNATURE]       = {.error_type = (1 << 2),  .error_message = "Invalid BMP signature"},
-    [ERROR_WRONG_BMP_HEADER_SIZE]       = {.error_type = (1 << 3),  .error_message = "Wrong BMP header size"},
-    [ERROR_WRONG_BMP_INFO_HEADER_SIZE]  = {.error_type = (1 << 4),  .error_message = "Wrong BMP INFO header size"},
-    [ERROR_WRONG_BMP_NUM_PLANE]         = {.error_type = (1 << 5),  .error_message = "Wrong BMP number of plane"},
-    [ERROR_WRONG_BMP_COMPRESSION]       = {.error_type = (1 << 6),  .error_message = "Wrong BMP compression"},
-    [ERROR_WRONG_BMP_TOTAL_COLORS]      = {.error_type = (1 << 7),  .error_message = "Wrong BMP total colors"},
-    [ERROR_WRONG_BMP_IMPORTANT_COLORS]  = {.error_type = (1 << 8),  .error_message = "Wrong BMP important colors"},
-    [ERROR_WRONG_BMP_BITS_PER_PIXEL]    = {.error_type = (1 << 9),  .error_message = "Wrong BMP bits per pixel"},
-    [ERROR_WRONG_BMP_FILE_SIZE]         = {.error_type = (1 << 10), .error_message = "Wrong BMP file size"},
-    [ERROR_WRONG_BMP_IMAGE_SIZE]        = {.error_type = (1 << 11), .error_message = "Wrong BMP image size"},
-    [ERROR_CANNOT_READ_PIXEL_DATA]      = {.error_type = (1 << 12), .error_message = "Cannot read BMP pixel data"},
+    [ERROR_NOT_ENOUGH_MEMORY]           = {.error_type = (1),   .error_message = "Not enough memory"},
+    [ERROR_CANNOT_READ_BMP_HEADER]      = {.error_type = (2),   .error_message = "Cannot read BMP header"},
+    [ERROR_INVALID_BMP_SIGNATURE]       = {.error_type = (3),   .error_message = "Invalid BMP signature"},
+    [ERROR_WRONG_BMP_HEADER_SIZE]       = {.error_type = (4),   .error_message = "Wrong BMP header size"},
+    [ERROR_WRONG_BMP_INFO_HEADER_SIZE]  = {.error_type = (5),   .error_message = "Wrong BMP INFO header size"},
+    [ERROR_WRONG_BMP_NUM_PLANE]         = {.error_type = (6),   .error_message = "Wrong BMP number of plane"},
+    [ERROR_WRONG_BMP_COMPRESSION]       = {.error_type = (7),   .error_message = "Wrong BMP compression"},
+    [ERROR_WRONG_BMP_TOTAL_COLORS]      = {.error_type = (8),   .error_message = "Wrong BMP total colors"},
+    [ERROR_WRONG_BMP_IMPORTANT_COLORS]  = {.error_type = (9),   .error_message = "Wrong BMP important colors"},
+    [ERROR_WRONG_BMP_BITS_PER_PIXEL]    = {.error_type = (10),  .error_message = "Wrong BMP bits per pixel"},
+    [ERROR_WRONG_BMP_FILE_SIZE]         = {.error_type = (11), .error_message = "Wrong BMP file size"},
+    [ERROR_WRONG_BMP_IMAGE_SIZE]        = {.error_type = (12), .error_message = "Wrong BMP image size"},
+    [ERROR_CANNOT_READ_PIXEL_DATA]      = {.error_type = (13), .error_message = "Cannot read BMP pixel data"},
 
     // Copy error handler
-    [ERROR_COPY_BMP_IMAGE_FAIL]         = {.error_type = (1 << 13), .error_message = "Cannot copy BMP image"},
+    [ERROR_COPY_BMP_IMAGE_FAIL]         = {.error_type = (14), .error_message = "Cannot copy BMP image"},
     
     // Write error handler
-    [ERROR_CANNOT_WRITE_BMP_HEADER]     = {.error_type = (1 << 14), .error_message = "Cannot write BMP header"},
-    [ERROR_CANNOT_WRITE_BMP_IMAGE]      = {.error_type = (1 << 15), .error_message = "Cannot write BMP image"}
+    [ERROR_CANNOT_WRITE_BMP_HEADER]     = {.error_type = (15), .error_message = "Cannot write BMP header"},
+    [ERROR_CANNOT_WRITE_BMP_IMAGE]      = {.error_type = (16), .error_message = "Cannot write BMP image"}
 };
 
 // BMP operation

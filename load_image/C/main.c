@@ -26,12 +26,12 @@ int main(int argc, char *argv[])
     BYTE u08Ret = FUNC_SUC;
     BMPImage *img = read_image(argv[1]);
 
-    printf("Input Image\n");
+    printf(YELLOW_COLOR "Input Image\n" ENDL_COLOR);
     show_bmp_info(img);
 
     BMPImage *output_img = copy_bmp(img);
 
-    printf("Output Image\n");
+    printf(YELLOW_COLOR "Output Image\n" ENDL_COLOR);
     show_bmp_info(output_img);
 
     u08Ret |= write_image("output.bmp", output_img);
