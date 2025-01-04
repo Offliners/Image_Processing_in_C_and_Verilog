@@ -24,9 +24,9 @@ integer i;
 reg [1:0] state, next_state;
 reg [1:0] IDLE, READ, OPERATION, WRITE;
 
-reg [`COUNTER_WIDTH-1:0] count;
-reg [`BYTE_WIDTH-1:0] bmp_data      [0:`BMP_TOTAL_SIZE-1];
-reg [`BYTE_WIDTH-1:0] bmp_data_next [0:`BMP_TOTAL_SIZE-1];
+reg [`ADDR_WIDTH-1:0] count;
+reg [`BYTE_WIDTH-1:0] bmp_data;
+reg [`BYTE_WIDTH-1:0] bmp_data_next;
 
 
 always @(posedge clk or negedge rst_n) begin
