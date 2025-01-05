@@ -14,10 +14,10 @@ input [`ADDR_WIDTH-1:0] RAM_addr;
 input [`BYTE_WIDTH-1:0] RAM_D;
 
 integer i;
-reg [`BYTE_WIDTH-1:0] ram_data [0:`BMP_TOTAL_SIZE-1];
+reg [`BYTE_WIDTH-1:0] ram_data [0:`BMP_TOTAL_SIZE];
 
 initial begin
-    for(i = 0; i <= `BMP_TOTAL_SIZE; i = i + 1) 
+    for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 1) 
         ram_data[i] = 0;
 end
 

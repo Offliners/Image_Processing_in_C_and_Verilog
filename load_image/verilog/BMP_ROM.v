@@ -18,7 +18,7 @@ input [`ADDR_WIDTH-1:0] ROM_addr;
 
 output reg [`BYTE_WIDTH-1:0] ROM_Q;
 
-reg [`BYTE_WIDTH-1:0] rom_data [0:`BMP_TOTAL_SIZE-1];
+reg [`BYTE_WIDTH-1:0] rom_data [0:`BMP_TOTAL_SIZE];
 
 initial begin
     @(negedge rst_n) $readmemh(`OUTPUT_BMP_RAWDATA_TXT_PATH, rom_data);

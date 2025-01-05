@@ -13,7 +13,6 @@ integer input_bmp_id;
 integer txt_bmp_id;
 integer output_bmp_id;
 
-wire in_valid;
 wire [`BYTE_WIDTH-1:0] ROM_Q;
 wire ROM_valid;
 wire [`ADDR_WIDTH-1:0] ROM_addr;
@@ -24,6 +23,7 @@ wire done;
 
 reg clk;
 reg rst_n;
+reg in_valid;
 reg [`BYTE_WIDTH-1:0] bmp_data [0:`BMP_TOTAL_SIZE-1];
 
 always #(`CYCLE/2) clk = ~clk;
@@ -34,21 +34,30 @@ initial begin
 end
 
 initial begin
-    // Initialize
-    clk         = 1'b0;
-    rst_n       = 1'b0;  
+    // Step 1: Initialize
+    rst_n = 1'b0;  
+    force clk = 1'b0;
 
-    // Read input BMP
+    // Step 2: Read input BMP
     $display("\033[0;32mImage found!\033[m");
     input_bmp_id  = $fopen(`INPUT_BMP_IMAGE_PATH, "rb");
     k = $fread(bmp_data, input_bmp_id);
     $fclose(input_bmp_id);
 
-    // Write BMP raw data in txt
+    // Step 3: Write BMP raw data in txt
     txt_bmp_id = $fopen(`OUTPUT_BMP_RAWDATA_TXT_PATH, "w");
     for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 4)
         $fwrite(txt_bmp_id, "%h %h %h %h\n", bmp_data[i], bmp_data[i+1], bmp_data[i+2], bmp_data[i+3]);
     $fclose(txt_bmp_id);
+
+    #(0.5) rst_n = 0;
+    #(3)   rst_n = 1;
+    #(3)   release clk;
+    // Step 4: Set in_valid for BMP_TOTAL_SIZE cycles
+    @(posedge clk) in_valid = 1'b1;
+
+    // Step 5:
+    // if(done != 1'b1) display_fail;
 end
 
 LOAD_BMP LOAD_BMP1(
@@ -83,11 +92,22 @@ always @(posedge done)begin
     // Write output BMP
     $display("\033[0;32mOutput BMP Image!\033[m");
     output_bmp_id = $fopen(`OUTPUT_BMP_IMAGE_PATH, "wb");
-    for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 4)
+    for(i = 1; i <= `BMP_TOTAL_SIZE; i = i + 4)
         $fwrite(output_bmp_id, "%u", {BMP_RAM1.ram_data[i+3], BMP_RAM1.ram_data[i+2], BMP_RAM1.ram_data[i+1], BMP_RAM1.ram_data[i]});
     $fclose(output_bmp_id);
 
     #(100) $finish;
 end
+
+task display_fail; begin
+        $display("\033[0;31m        ----------------------------               \033[m");
+        $display("\033[0;31m        --                        --       |\\__|\\\033[m");
+        $display("\033[0;31m        --  OOPS!!                --      / X,X  | \033[m");
+        $display("\033[0;31m        --                        --    /_____   | \033[m");
+        $display("\033[0;31m        --  Simulation FAIL!!     --   /^ ^ ^ \\  |\033[m");
+        $display("\033[0;31m        --                        --  |^ ^ ^ ^ |w| \033[m");
+        $display("\033[0;31m        ----------------------------   \\m___m__|_|\033[m");
+        $finish;
+end endtask
 
 endmodule

@@ -32,8 +32,7 @@ integer i;
 reg [1:0] state, next_state;
 parameter [1:0] IDLE      = 2'b00, 
                 READ      = 2'b01, 
-                OPERATION = 2'b01, 
-                WRITE     = 2'b11;
+                WRITE     = 2'b10;
 
 reg [`BYTE_WIDTH-1:0] bmp_data_buf;
 
@@ -51,8 +50,6 @@ always @(*) begin
         IDLE:    
             next_state = in_valid ? READ : IDLE;
         READ: 
-            next_state = OPERATION;
-        OPERATION:
             next_state = WRITE;
         WRITE:
             next_state = IDLE;
@@ -73,10 +70,6 @@ always @(*) begin
             ROM_valid = 1'b1;
             RAM_valid = 1'b0;
         end
-        OPERATION: begin
-            ROM_valid = 1'b0;
-            RAM_valid = 1'b0;
-        end
         WRITE: begin
             ROM_valid = 1'b0;
             RAM_valid = 1'b1;
@@ -84,13 +77,13 @@ always @(*) begin
     endcase
 end
 
-always @(posedge clk) begin
+always @(*) begin
     case(state)
         READ: begin
-            bmp_data_buf <= ROM_Q;
+            bmp_data_buf = ROM_Q;
         end
         WRITE: begin
-            RAM_D <= bmp_data_buf;
+            RAM_D = bmp_data_buf;
         end
     endcase
 end
@@ -114,7 +107,7 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 always @(*) begin
-    done = (RAM_addr == `BMP_TOTAL_SIZE) ? 1 : 0;
+    done = (RAM_addr == `BMP_TOTAL_SIZE) && (state == IDLE) ? 1 : 0;
 end
 
 endmodule
