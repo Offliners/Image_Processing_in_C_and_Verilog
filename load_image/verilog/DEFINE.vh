@@ -11,7 +11,6 @@
 `define OUTPUT_BMP_IMAGE_PATH        "./output.bmp"
 
 // BMP info
-`define BMP_HEADER           54
 `define BMP_HEIGHT           256
 `define BMP_WIDTH            256
 `define BMP_CHANNEL          3
@@ -19,5 +18,6 @@
 `define ADDR_WIDTH           18      // log2_(BMP_TOTAL_SIZE)
 `define BMP_FILE_HEADER_SZIE 14
 `define BMP_INFO_HEADER_SZIE 40
+`define BMP_HEADER           54      // BMP_FILE_HEADER_SZIE + BMP_INFO_HEADER_SZIE
 
 `endif

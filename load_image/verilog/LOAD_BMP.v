@@ -5,29 +5,37 @@ module LOAD_BMP(
     clk,
     rst_n,
     in_valid,
-    in_data,
+    ROM_Q,
 
     // Output signals
-    out_valid,
-    out_data
+    ROM_valid,
+    ROM_addr,
+    RAM_valid,
+    RAM_D,
+    RAM_addr,
+    done
 );
 
 input clk;
 input rst_n;
 input in_valid;
-input [`BYTE_WIDTH-1:0] in_data;
+input [`BYTE_WIDTH-1:0] ROM_Q;
 
-output reg out_valid;
-output reg [`BYTE_WIDTH-1:0] out_data;
+output reg ROM_valid;
+output reg [`ADDR_WIDTH-1:0] ROM_addr;
+output reg RAM_valid;
+output reg [`BYTE_WIDTH-1:0] RAM_D;
+output reg [`ADDR_WIDTH-1:0] RAM_addr;
+output reg done;
 
 integer i;
 reg [1:0] state, next_state;
-reg [1:0] IDLE, READ, OPERATION, WRITE;
+parameter [1:0] IDLE      = 2'b00, 
+                READ      = 2'b01, 
+                OPERATION = 2'b01, 
+                WRITE     = 2'b11;
 
-reg [`ADDR_WIDTH-1:0] count;
-reg [`BYTE_WIDTH-1:0] bmp_data;
-reg [`BYTE_WIDTH-1:0] bmp_data_next;
-
+reg [`BYTE_WIDTH-1:0] bmp_data_buf;
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
@@ -37,39 +45,76 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 always @(*) begin
-    case (state)
-        default:   
+    case(state)
+        default: 
             next_state = IDLE;
-        IDLE:      
+        IDLE:    
             next_state = in_valid ? READ : IDLE;
-        READ:     
-            next_state = (count < `BMP_TOTAL_SIZE) ? READ : OPERATION;
-        OPERATION: 
+        READ: 
+            next_state = OPERATION;
+        OPERATION:
             next_state = WRITE;
+        WRITE:
+            next_state = IDLE;
+    endcase
+end
+
+always @(*) begin
+    case(state)
+        default: begin
+            ROM_valid = 1'b0;
+            RAM_valid = 1'b0;
+        end
+        IDLE: begin
+            ROM_valid = 1'b0;
+            RAM_valid = 1'b0;
+        end
+        READ: begin
+            ROM_valid = 1'b1;
+            RAM_valid = 1'b0;
+        end
+        OPERATION: begin
+            ROM_valid = 1'b0;
+            RAM_valid = 1'b0;
+        end
         WRITE: begin
-            out_valid  = 1;     
-            next_state = (count < `BMP_TOTAL_SIZE) ? WRITE : IDLE;
+            ROM_valid = 1'b0;
+            RAM_valid = 1'b1;
+        end
+    endcase
+end
+
+always @(posedge clk) begin
+    case(state)
+        READ: begin
+            bmp_data_buf <= ROM_Q;
+        end
+        WRITE: begin
+            RAM_D <= bmp_data_buf;
         end
     endcase
 end
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
-        count <= 0;
+        ROM_addr <= 0;
+    else if(ROM_valid)
+        ROM_addr <= ROM_addr + 1;
     else
-        count <= count + 1;
+        ROM_addr <= ROM_addr;
 end
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
-        for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 1)
-            bmp_data[i] <= 0;
+        RAM_addr <= 0;
+    else if(RAM_valid)
+        RAM_addr <= RAM_addr + 1;
     else
-        bmp_data[count] <= bmp_data_next[count];
+        RAM_addr <= RAM_addr;
 end
 
 always @(*) begin
-    bmp_data_next[count] = in_valid ? in_data : bmp_data[count];
+    done = (RAM_addr == `BMP_TOTAL_SIZE) ? 1 : 0;
 end
 
 endmodule
