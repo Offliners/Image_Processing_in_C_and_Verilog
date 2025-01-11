@@ -35,7 +35,7 @@ end
 
 initial begin
     // Step 1: Initialize
-    rst_n = 1'b0;  
+    rst_n = 1'b1;  
     force clk = 1'b0;
 
     // Step 2: Read input BMP
@@ -51,10 +51,11 @@ initial begin
     $fclose(txt_bmp_id);
 
     #(0.5) rst_n = 0;
-    #(3)   rst_n = 1;
     #(3)   release clk;
-    // Step 4: Set in_valid for BMP_TOTAL_SIZE cycles
-    @(posedge clk) in_valid = 1'b1;
+    #(3)   rst_n = 1;
+
+    // Step 4: Set in_valid
+    in_valid = 1'b1;
 
     // Step 5:
     // if(done != 1'b1) display_fail;
