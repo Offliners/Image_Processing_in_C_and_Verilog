@@ -13,6 +13,9 @@ $ make
 $ ./load_image.o ../lena256.bmp
 
 # Verilog
+$ make check
+$ make simulate
+$ make wave
 ```
 
 ## BMP File Format

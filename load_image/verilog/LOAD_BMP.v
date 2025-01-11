@@ -31,7 +31,7 @@ output reg done;
 integer i;
 reg [1:0] state, next_state;
 parameter [1:0] IDLE      = 2'b00, 
-                READ      = 2'b01, 
+                READ      = 2'b01,
                 WRITE     = 2'b10;
 
 reg [`BYTE_WIDTH-1:0] bmp_data_buf;
@@ -52,7 +52,7 @@ always @(*) begin
         READ: 
             next_state = WRITE;
         WRITE:
-            next_state = IDLE;
+            next_state = done ? IDLE : READ;
     endcase
 end
 
@@ -78,7 +78,7 @@ always @(*) begin
 end
 
 always @(*) begin
-    case(state)
+    case(next_state)
         READ: begin
             bmp_data_buf = ROM_Q;
         end
@@ -107,7 +107,7 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 always @(*) begin
-    done = (RAM_addr == `BMP_TOTAL_SIZE) && (state == IDLE) ? 1 : 0;
+    done = (RAM_addr > `BMP_TOTAL_SIZE) ? 1 : 0;
 end
 
 endmodule
