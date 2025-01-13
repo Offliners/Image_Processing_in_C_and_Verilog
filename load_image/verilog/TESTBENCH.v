@@ -8,7 +8,7 @@
 
 module TESTBENCH();
 
-integer i, k;
+integer i, k, latency;
 integer input_bmp_id;
 integer txt_bmp_id;
 integer output_bmp_id;
@@ -36,6 +36,7 @@ end
 initial begin
     // Step 1: Initialize
     rst_n = 1'b1;  
+    latency = 0;
     force clk = 1'b0;
 
     // Step 2: Read input BMP
@@ -57,8 +58,13 @@ initial begin
     // Step 4: Set in_valid
     in_valid = 1'b1;
 
-    // Step 5:
-    // if(done != 1'b1) display_fail;
+    // Step 5: Set timeout condition
+    while(!done) begin
+        latency = latency + 1;
+        @(negedge clk);
+        if(latency > `MAX_LATENCY) display_fail;
+    end
+    $display("\033[0;32mThe execution latency are %d cycles\033[m", latency);
 end
 
 LOAD_BMP LOAD_BMP1(

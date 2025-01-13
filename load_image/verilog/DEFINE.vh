@@ -20,4 +20,7 @@
 `define BMP_INFO_HEADER_SZIE 40
 `define BMP_HEADER           54      // BMP_FILE_HEADER_SZIE + BMP_INFO_HEADER_SZIE
 
+// Latency
+`define MAX_LATENCY          1_0000_0000
+
 `endif
