@@ -2,7 +2,7 @@
 `define CYCLE 10.0
 
 `include "DEFINE.vh"
-`include "LOAD_BMP.v"
+`include "BGR2GRAY.v"
 `include "BMP_ROM.v"
 `include "BMP_RAM.v"
 
@@ -29,7 +29,7 @@ reg [`BYTE_WIDTH-1:0] bmp_data [0:`BMP_TOTAL_SIZE-1];
 always #(`CYCLE/2) clk = ~clk;
 
 initial begin
-    $dumpfile("LOAD_BMP.vcd");
+    $dumpfile("BGR2GRAY.vcd");
     $dumpvars;
 end
 
@@ -61,7 +61,7 @@ initial begin
     // if(done != 1'b1) display_fail;
 end
 
-LOAD_BMP LOAD_BMP1(
+BGR2GRAY BGR2GRAY1(
     .clk(clk),
     .rst_n(rst_n),
     .in_valid(in_valid),

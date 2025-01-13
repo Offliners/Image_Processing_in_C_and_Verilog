@@ -1,6 +1,6 @@
 `include "DEFINE.vh"
 
-module LOAD_BMP(
+module BGR2GRAY(
     // Input signals
     clk,
     rst_n,
@@ -29,13 +29,15 @@ output reg [`ADDR_WIDTH-1:0] RAM_addr;
 output reg done;
 
 integer i;
-reg [1:0] state, next_state;
-parameter [1:0] IDLE            = 2'b00, 
-                READ_BMP_HEADER = 2'b01,
-                READ_BMP_DATA   = 2'b10,
-                WRITE           = 2'b11;
+reg [2:0] state, next_state;
+parameter [2:0] IDLE             = 3'b000, 
+                READ_BMP_HEADER  = 3'b001,
+                WRITE_BMP_HEADER = 3'b010,
+                READ_BMP_DATA    = 3'b011,
+                WRITE_BMP_DATA   = 3'b100;
 
-reg [1:0] bgr_count;
+reg [1:0] read_bgr_count, write_gray_count;
+reg read_bgr_done, write_gray_done;
 reg [`BYTE_WIDTH-1:0] bmp_data_buf [0:`BMP_CHANNEL-1];
 reg [`BYTE_WIDTH-1:0] gray_data_buf;
 
@@ -53,11 +55,13 @@ always @(*) begin
         IDLE:    
             next_state = in_valid ? READ_BMP_HEADER : IDLE;
         READ_BMP_HEADER: 
-            next_state = (ROM_addr < `BMP_HEADER_SIZE) ? WRITE : READ_BMP_DATA;
+            next_state = WRITE_BMP_HEADER;
+        WRITE_BMP_HEADER:
+            next_state = (ROM_addr <= `BMP_HEADER_SIZE) ? READ_BMP_HEADER : READ_BMP_DATA;
         READ_BMP_DATA:
-            next_state = (bgr_count == 2'b11) ? WRITE : READ_BMP_DATA;
-        WRITE:
-            next_state = done ? IDLE : ((ROM_addr < `BMP_HEADER_SIZE) ? READ_BMP_HEADER : READ_BMP_DATA);
+            next_state = read_bgr_done ? WRITE_BMP_DATA : READ_BMP_DATA; 
+        WRITE_BMP_DATA:
+            next_state = done ? IDLE : (write_gray_done ? READ_BMP_DATA : WRITE_BMP_DATA);
     endcase
 end
 
@@ -75,11 +79,15 @@ always @(*) begin
             ROM_valid = 1'b1;
             RAM_valid = 1'b0;
         end
+        WRITE_BMP_HEADER: begin
+            ROM_valid = 1'b0;
+            RAM_valid = 1'b1;
+        end
         READ_BMP_DATA: begin
             ROM_valid = 1'b1;
             RAM_valid = 1'b0;
         end
-        WRITE: begin
+        WRITE_BMP_DATA: begin
             ROM_valid = 1'b0;
             RAM_valid = 1'b1;
         end
@@ -91,20 +99,20 @@ always @(*) begin
         READ_BMP_HEADER: begin
             bmp_data_buf[0] = ROM_Q;
         end
-        READ_BMP_DATA: begin
-            bmp_data_buf[bgr_count] = ROM_Q;
+        WRITE_BMP_HEADER: begin
+            RAM_D = bmp_data_buf[0];
         end
-        WRITE: begin
-            if(RAM_addr < `BMP_HEADER_SIZE)
-                RAM_D = bmp_data_buf[0];
-            else
-                RAM_D = gray_data_buf;
+        READ_BMP_DATA: begin
+            bmp_data_buf[read_bgr_count] = ROM_Q;
+        end
+        WRITE_BMP_DATA: begin
+            RAM_D = gray_data_buf;
         end
     endcase
 end
 
 always @(*) begin
-    if(bgr_count == 3'b11) begin
+    if(read_bgr_done) begin
         gray_data_buf = (bmp_data_buf[0] * 30 + bmp_data_buf[1] * 150 + bmp_data_buf[2] * 76) >> 8;
     end
 end
@@ -129,19 +137,34 @@ end
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
-        bgr_count <= 0;
+        read_bgr_count <= 0;
     else if(state == READ_BMP_DATA) begin
-        if(bgr_count == 2'b11)
-            bgr_count <= 0;
+        if(read_bgr_count == 2'b10)
+            read_bgr_count <= 0;
         else
-            bgr_count <= bgr_count + 1;
+            read_bgr_count <= read_bgr_count + 1;
     end
     else
-        bgr_count <= bgr_count;
+        read_bgr_count <= read_bgr_count;
+end
+
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n)
+        write_gray_count <= 0;
+    else if(state == WRITE_BMP_DATA) begin
+        if(write_gray_count == 2'b10)
+            write_gray_count <= 0;
+        else
+            write_gray_count <= write_gray_count + 1;
+    end
+    else
+        write_gray_count <= write_gray_count;
 end
 
 always @(*) begin
     done = (RAM_addr > `BMP_TOTAL_SIZE) ? 1 : 0;
+    read_bgr_done = (read_bgr_count == 2'b10) ? 1 : 0;
+    write_gray_done = (write_gray_count == 2'b10) ? 1 : 0;
 end
 
 endmodule
