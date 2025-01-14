@@ -9,12 +9,15 @@ In this repository there are some image processing algorithms implemented using 
     + [Load Image](#load-image)
     + [BGR to Gray](#bgr-to-gray)
     + [Rotate Image](#rotate-image)
+    + [Binarization](#binarization)
 * [Tools](#tools)
 
 ## Overview
 |[Load Image](./load_image/README.md)|[BGR to Gray](./bgr_to_gray/README.md)|[Rotate Image](./rotate_image/README.md)|
 |-|-|-|
-|![load image](./load_image/output.bmp)|![load image](./bgr_to_gray/output_gray.bmp)|![rotate image](./rotate_image/output_rot_90.bmp)|
+|![load image](./load_image/output.bmp)|![bgr to gray](./bgr_to_gray/output_gray.bmp)|![rotate image](./rotate_image/output_rot_90.bmp)|
+|[Binarization](./binarization/README.md)|-|-|
+|![binarization](./binarization/output_binarization.bmp)|-|-|
 
 ## Image Processing Flow
 ```mermaid
@@ -67,7 +70,7 @@ flowchart LR
 
 ## Contents
 ### Load Image
-Read image from BMP (bitmap) file , and then write it into another.
+Read image from BMP (bitmap) file, and then write it into another.
 <details>
 <summary>More</summary>
 
@@ -78,7 +81,7 @@ Read image from BMP (bitmap) file , and then write it into another.
 </details>
 
 ### BGR to Gray
-Read image from BMP (bitmap) file , and then convert it (BGR image) to grayscale.
+Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 
 <details>
 <summary>More</summary>
@@ -90,7 +93,7 @@ Read image from BMP (bitmap) file , and then convert it (BGR image) to grayscale
 </details>
 
 ### Rotate Image
-Read image from BMP (bitmap) file , and then rotate it in 90 degree (clockwise).
+Read image from BMP (bitmap) file, and then rotate it in 90 degree (clockwise).
 
 <details>
 <summary>More</summary>
@@ -98,6 +101,18 @@ Read image from BMP (bitmap) file , and then rotate it in 90 degree (clockwise).
 | Input                   | Output                         |
 | ----------------------- | ------------------------------ |
 | ![input](./rotate_image/lena256.bmp) | ![output](./rotate_image/output_rot_90.bmp) |
+
+</details>
+
+### Binarization
+Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale. Finally, set pixels to white or black determined by threshold.
+
+<details>
+<summary>More</summary>
+
+| Input                   | Output                               |
+| ----------------------- | ------------------------------------ |
+| ![input](./binarization/lena256.bmp) | ![output](./binarization/output_binarization.bmp) |
 
 </details>
 
