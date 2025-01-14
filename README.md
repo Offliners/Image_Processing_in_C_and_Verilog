@@ -4,6 +4,7 @@ In this repository there are some computer vision algorithms implemented using C
 ## Table of Contents
 * [Table of Contents](#table-of-contents)
 * [Overview](#overview)
+* [Implement Flow](#implement-flow)
 * [Contents](#contents)
     + [Load Image](#load-image)
     + [BGR to Gray](#bgr-to-gray)
@@ -15,7 +16,7 @@ In this repository there are some computer vision algorithms implemented using C
 |-|-|-|
 |![load image](./load_image/output.bmp)|![load image](./bgr_to_gray/output_gray.bmp)|![rotate image](./rotate_image/output_rot_90.bmp)|
 
-## Flow
+## Implement Flow
 ```mermaid
 %%{
   init: {
