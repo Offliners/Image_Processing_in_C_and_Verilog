@@ -50,10 +50,10 @@ flowchart LR
     style ImplementFlow fill:#ffffff00, stroke-width:0px
 
     direction TB
-        A[Read BMP image from ROM]
-        A --> B[Read BMP Header]
+        A[Put BMP image from ROM]
+        A --> B[Read BMP Header from ROM]
         B --> C[Write BMP Header to RAM]
-        C --> D[Read BMP Pixel Data]
+        C --> D[Read BMP Pixel Data from ROM]
         D --> E[Computer Vision Algorihtm]
         E --> F[Write BMP Pixel Data to RAM]
         style A fill:#74c2b5,stroke:#000000,stroke-width:4px
