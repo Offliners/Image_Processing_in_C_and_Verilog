@@ -1,5 +1,5 @@
 # BGR to Gray
-Read image from BMP (bitmap) file , and then convert it (BGR image) to grayscale.
+Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 
 | Input                   | Output                       |
 | ----------------------- | ---------------------------- |
