@@ -1,10 +1,10 @@
-# Computer Vision in C & Verilog
-In this repository there are some computer vision algorithms implemented using C and Verilog
+# Image Processing in C & Verilog
+In this repository there are some image processing algorithms implemented using C and Verilog
 
 ## Table of Contents
 * [Table of Contents](#table-of-contents)
 * [Overview](#overview)
-* [Implement Flow](#implement-flow)
+* [Image Processing Flow](#image-processing-flow)
 * [Contents](#contents)
     + [Load Image](#load-image)
     + [BGR to Gray](#bgr-to-gray)
@@ -16,7 +16,7 @@ In this repository there are some computer vision algorithms implemented using C
 |-|-|-|
 |![load image](./load_image/output.bmp)|![load image](./bgr_to_gray/output_gray.bmp)|![rotate image](./rotate_image/output_rot_90.bmp)|
 
-## Implement Flow
+## Image Processing Flow
 ```mermaid
 %%{
   init: {
@@ -30,7 +30,7 @@ In this repository there are some computer vision algorithms implemented using C
 }%%
 
 flowchart LR
-    b0[                  ] --- b2[ ] --- b4[ ] --- ImplementFlow --- b1[ ] --- b3[ ] --- b5[                  ]
+    b0[                  ] --- b2[ ] --- b4[ ] --- ProcessingFlow --- b1[ ] --- b3[ ] --- b5[                  ]
     style b0 stroke-width:0px, fill: #FFFFFF00, color:#FFFFFF00
     style b1 stroke-width:0px, fill: #FFFFFF00
     style b2 stroke-width:0px, fill: #FFFFFF00
@@ -45,9 +45,9 @@ flowchart LR
     linkStyle 4 stroke-width:0px
     linkStyle 5 stroke-width:0px
     
-    subgraph ImplementFlow
+    subgraph ProcessingFlow
     direction TB
-    style ImplementFlow fill:#ffffff00, stroke-width:0px
+    style ProcessingFlow fill:#ffffff00, stroke-width:0px
 
     direction TB
         A[Put BMP image to ROM]
