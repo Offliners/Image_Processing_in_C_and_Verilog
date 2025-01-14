@@ -17,3 +17,7 @@ $ make check
 $ make simulate
 $ make wave
 ```
+
+## BGR to Grayscale Conversion
+NTSC formula:
+$Gray = B*0.114 + G*0.587 + R*0.299$
