@@ -12,7 +12,7 @@ In this repository there are some image processing algorithms implemented using 
 * [Tools](#tools)
 
 ## Contents
-### Load Image
+### [Load Image](./load_image/README.md)
 Read image from BMP (bitmap) file, and then write it into another.
 <details>
 <summary>More</summary>
@@ -23,7 +23,7 @@ Read image from BMP (bitmap) file, and then write it into another.
 
 </details>
 
-### BGR to Gray
+### [BGR to Gray](./bgr_to_gray/README.md)
 Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 
 <details>
@@ -35,7 +35,7 @@ Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 
 </details>
 
-### Rotate Image
+### [Rotate Image](./rotate_image/README.md)
 Read image from BMP (bitmap) file, and then rotate it in 90 degree (clockwise).
 
 <details>
@@ -47,7 +47,7 @@ Read image from BMP (bitmap) file, and then rotate it in 90 degree (clockwise).
 
 </details>
 
-### Binarization
+### [Binarization](./binarization/README.md)
 Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale. Finally, set pixels to white or black determined by threshold.
 
 <details>
