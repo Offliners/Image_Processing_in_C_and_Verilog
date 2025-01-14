@@ -1,5 +1,5 @@
-# Rotation Image
-Read image from BMP (bitmap) file , and then rotation it in 90 degree (clockwise).
+# Rotate Image
+Read image from BMP (bitmap) file , and then rotate it in 90 degree (clockwise).
 
 | Input                   | Output                         |
 | ----------------------- | ------------------------------ |

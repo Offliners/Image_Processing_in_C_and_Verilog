@@ -179,3 +179,64 @@ void free_bmp_image(BMPImage *img)
         free(img);
     }
 }
+
+void swap_pixel(BMPColorTable *a, BMPColorTable *b)
+{
+    BMPColorTable temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+BMPImage *rotate_bmp(BMPImage *src_img)
+{
+    BMPImage *rot_img = (BMPImage*)malloc(sizeof(BMPImage));
+    LWORD pixel_data_size = get_image_size_by_bytes(&src_img->header);
+    rot_img->header = src_img->header;
+    rot_img->p08Data = (BYTE*)malloc(pixel_data_size);
+
+    LWORD img_width = src_img->header.stBMPInfoHeader.u32ImageWidth;
+    LWORD img_height = src_img->header.stBMPInfoHeader.u32ImageHeight;
+
+    BMPColorTable **pixel = (BMPColorTable **)malloc(img_height * sizeof(BMPColorTable*));
+    for(int i = 0; i < img_height; i++)
+        pixel[i] = (BMPColorTable *)malloc(img_width * sizeof(BMPColorTable));
+
+    int count = 0;
+    for(int i = 0; i < img_height; i++)
+    {
+        for(int j = 0; j < img_width; j++)
+        {
+            pixel[i][j].u08Blue = src_img->p08Data[count];
+            count++;
+            pixel[i][j].u08Green = src_img->p08Data[count];
+            count++;
+            pixel[i][j].u08Red = src_img->p08Data[count];
+            count++;
+            pixel[i][j].u08Reserved = 0;
+        }
+    }
+
+    for(int i = 0; i < img_height; i++)
+        for(int j = 0; j < i; j++)
+            swap_pixel(&pixel[i][j], &pixel[j][i]);
+
+    for(int i = 0; i < img_height / 2; i++)
+        for(int j = 0; j < img_width; j++)
+            swap_pixel(&pixel[i][j], &pixel[img_height - i - 1][j]);
+
+    count = 0;
+    for(int i = 0; i < img_height; i++)
+    {
+        for(int j = 0; j < img_width; j++)
+        {
+            rot_img->p08Data[count] = pixel[i][j].u08Blue;
+            count++;
+            rot_img->p08Data[count] = pixel[i][j].u08Green;
+            count++;
+            rot_img->p08Data[count] = pixel[i][j].u08Red;
+            count++;
+        }
+    }
+
+    return rot_img;
+}

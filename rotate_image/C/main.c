@@ -29,15 +29,15 @@ int main(int argc, char *argv[])
     printf(YELLOW_COLOR "Input Image\n" ENDL_COLOR);
     show_bmp_info(img);
 
-    BMPImage *output_img = copy_bmp(img);
+    BMPImage *output_rot_img = rotate_bmp(img);
 
     printf(YELLOW_COLOR "Output Image\n" ENDL_COLOR);
-    show_bmp_info(output_img);
+    show_bmp_info(output_rot_img);
 
-    u08Ret |= write_image("output.bmp", output_img);
+    u08Ret |= write_image("output_rot_90.bmp", output_rot_img);
 
     free_bmp_image(img);
-    free_bmp_image(output_img);
+    free_bmp_image(output_rot_img);
 
     return u08Ret;
 }

@@ -11,6 +11,8 @@
 #define BMP_BITS_PER_PIXEL   24
 #define BMP_BITS_PER_BYTE    8
 
+#define COLOR_CHANNELS       3
+
 // BMP format
 #pragma pack(push)
 #pragma pack(1)
@@ -138,5 +140,7 @@ int write_bmp(FILE *fp, BMPImage *img, LWORD *error_record);
 void show_bmp_info(const BMPImage *img);
 BMPImage *copy_bmp(BMPImage *img);
 void free_bmp_image(BMPImage *img);
+void swap_pixel(BMPColorTable *a, BMPColorTable *b);
+BMPImage *rotate_bmp(BMPImage *src_img);
 
 #endif
