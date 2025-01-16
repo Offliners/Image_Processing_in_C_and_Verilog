@@ -2,5 +2,3 @@
 *.vcd
 *.txt
 *.out
-
-binarization/verilog/
