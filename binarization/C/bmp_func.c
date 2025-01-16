@@ -214,9 +214,9 @@ BMPImage *binarize_bmp(BMPImage *src_img, BYTE threshold)
     for(int i = 0; i < pixel_data_size; i = i + 1)
     {
         if(src_img->p08Data[i] > threshold)
-            binary_img->p08Data[i] = 0xFF;
+            binary_img->p08Data[i] = WHITE_PIXEL_DATA;
         else
-            binary_img->p08Data[i] = 0;
+            binary_img->p08Data[i] = BLACK_PIXEL_DATA;
     }
 
     return binary_img;

@@ -1,1 +1,6 @@
 *.o
+*.vcd
+*.txt
+*.out
+
+binarization/verilog/

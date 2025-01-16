@@ -66,6 +66,9 @@ typedef struct {
 
 #define BMP_COLORTABLE_SIZE (sizeof(BMPColorTable))
 
+#define BLACK_PIXEL_DATA    0x00
+#define WHITE_PIXEL_DATA    0xFF
+
 // Error handler
 typedef enum {
     NO_ERROR,
