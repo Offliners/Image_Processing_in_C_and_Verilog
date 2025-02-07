@@ -13,7 +13,7 @@ BMPImage *read_bmp(FILE *fp, LWORD *error_record)
 
     // Read BMP header
     rewind(fp);
-    int num_fread = fread(&img->header, BMP_HEADER_SIZE, 1, fp);
+    BYTE num_fread = fread(&img->header, BMP_HEADER_SIZE, 1, fp);
     if(!error_checker(num_fread == 1, error_record, ERROR_CANNOT_READ_BMP_HEADER, __LINE__))
         return NULL;
 
@@ -65,9 +65,9 @@ void *bmp_header_check(const BMPImage *img, LWORD *error_record)
         return NULL;
 }
 
-int error_checker(int condition, LWORD *error_record, LWORD error, int line)
+BYTE error_checker(BYTE condition, LWORD *error_record, LWORD error, LWORD line)
 {
-    int is_valid = 1;
+    BYTE is_valid = 1;
     if(!condition)
     {
         is_valid = 0;
@@ -126,11 +126,11 @@ LWORD get_bytes_per_pixel(BMPHeader *bmp_header)
     return bmp_header->stBMPInfoHeader.u16BitsPerPixel / BMP_BITS_PER_BYTE;
 }
 
-int write_bmp(FILE *fp, BMPImage *img, LWORD *error_record)
+BYTE write_bmp(FILE *fp, BMPImage *img, LWORD *error_record)
 {
     // Write BMP header
     rewind(fp);
-    int num_fwrite = fwrite(&img->header, BMP_HEADER_SIZE, 1, fp);
+    BYTE num_fwrite = fwrite(&img->header, BMP_HEADER_SIZE, 1, fp);
     if(!error_checker(num_fwrite == 1, error_record, ERROR_CANNOT_WRITE_BMP_HEADER, __LINE__))
         return FUNC_FAIL;
 
@@ -147,21 +147,23 @@ int write_bmp(FILE *fp, BMPImage *img, LWORD *error_record)
 void show_bmp_info(const BMPImage *img)
 {
     // Show basic image information
+    printf("==========================\n");
     printf("size (byte): %d\n", img->header.stBMPFileHeader.u32FileSize);
     printf("height     : %d\n", img->header.stBMPInfoHeader.u32ImageHeight);
     printf("width      : %d\n", img->header.stBMPInfoHeader.u32ImageWidth);
-    printf("\n");
+    printf("==========================\n\n");
 }
 
 BMPImage *copy_bmp(BMPImage *img)
 {   
+    LWORD u32i = 0;
     LWORD error_record = 0;
     LWORD pixel_data_size = get_image_size_by_bytes(&img->header);
     BMPImage *img_copy = (BMPImage*)malloc(sizeof(BMPImage));
     img_copy->p08Data = (BYTE*)malloc(pixel_data_size);
 
     img_copy->header = img->header;
-    for(LWORD u32i = 0; u32i < pixel_data_size; u32i++)
+    for(u32i = 0; u32i < pixel_data_size; u32i++)
         img_copy->p08Data[u32i] = img->p08Data[u32i];
 
     bmp_header_check((BMPImage*)img_copy, &error_record);

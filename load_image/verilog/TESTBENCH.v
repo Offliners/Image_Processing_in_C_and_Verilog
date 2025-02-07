@@ -4,7 +4,7 @@
 `include "DEFINE.vh"
 `include "LOAD_BMP.v"
 `include "BMP_ROM.v"
-`include "BMP_RAM.v"
+`include "BMP_SINGLE_PORT_RAM.v"
 
 module TESTBENCH();
 
@@ -13,11 +13,12 @@ integer input_bmp_id;
 integer txt_bmp_id;
 integer output_bmp_id;
 
-wire [`BYTE_WIDTH-1:0] ROM_Q;
-wire ROM_valid;
+wire [`BYTE_WIDTH-1:0] ROM_out;
+wire ROM_ren;
 wire [`ADDR_WIDTH-1:0] ROM_addr;
-wire RAM_valid;
-wire [`BYTE_WIDTH-1:0] RAM_D;
+wire RAM_ren, RAM_wen;
+wire [`BYTE_WIDTH-1:0] RAM_in;
+wire [`BYTE_WIDTH-1:0] RAM_out;
 wire [`ADDR_WIDTH-1:0] RAM_addr;
 wire done;
 
@@ -71,11 +72,11 @@ LOAD_BMP LOAD_BMP1(
     .clk(clk),
     .rst_n(rst_n),
     .in_valid(in_valid),
-    .ROM_Q(ROM_Q),
-    .ROM_valid(ROM_valid),
+    .ROM_out(ROM_out),
+    .ROM_ren(ROM_ren),
     .ROM_addr(ROM_addr),
-    .RAM_valid(RAM_valid),
-    .RAM_D(RAM_D),
+    .RAM_ren(RAM_ren),
+    .RAM_in(RAM_in),
     .RAM_addr(RAM_addr),
     .done(done)
 );
@@ -83,16 +84,18 @@ LOAD_BMP LOAD_BMP1(
 BMP_ROM BMP_ROM1 (
     .clk(clk),
     .rst_n(rst_n),
-    .ROM_valid(ROM_valid),
+    .ROM_ren(ROM_ren),
     .ROM_addr(ROM_addr),
-    .ROM_Q(ROM_Q)
+    .ROM_out(ROM_out)
 );
 
-BMP_RAM BMP_RAM1(
+BMP_SINGLE_PORT_RAM BMP_RAM1(
     .clk(clk),
-    .RAM_valid(RAM_valid),
+    .RAM_ren(RAM_ren),
+    .RAM_wen(RAM_wen),
     .RAM_addr(RAM_addr),
-    .RAM_D(RAM_D)
+    .RAM_in(RAM_in),
+    .RAM_out(RAM_out)
 );
 
 always @(posedge done)begin

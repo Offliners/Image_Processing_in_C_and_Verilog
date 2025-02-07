@@ -147,10 +147,11 @@ int write_bmp(FILE *fp, BMPImage *img, LWORD *error_record)
 void show_bmp_info(const BMPImage *img)
 {
     // Show basic image information
+    printf("==========================\n");
     printf("size (byte): %d\n", img->header.stBMPFileHeader.u32FileSize);
     printf("height     : %d\n", img->header.stBMPInfoHeader.u32ImageHeight);
     printf("width      : %d\n", img->header.stBMPInfoHeader.u32ImageWidth);
-    printf("\n");
+    printf("==========================\n\n");
 }
 
 BMPImage *copy_bmp(BMPImage *img)

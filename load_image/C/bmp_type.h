@@ -128,15 +128,15 @@ static Error_Message error_table[ERROR_END] = {
 // BMP operation
 BMPImage *read_bmp(FILE *fp, LWORD *error_record);
 void *bmp_header_check(const BMPImage *img, LWORD *error_record);
-int error_checker(int condition, LWORD *error_record, LWORD error, int line);
+BYTE error_checker(BYTE condition, LWORD *error_record, LWORD error, LWORD line);
 LWORD get_image_file_size(FILE *fp);
 LWORD get_image_size_by_bytes(BMPHeader *bmp_header);
 LWORD get_image_row_size_bytes(BMPHeader *bmp_header);
 LWORD padding_byte(BMPHeader *bmp_header);
 LWORD get_bytes_per_pixel(BMPHeader *bmp_header);
-int write_bmp(FILE *fp, BMPImage *img, LWORD *error_record);
+BYTE write_bmp(FILE *fp, BMPImage *img, LWORD *error_record);
 void show_bmp_info(const BMPImage *img);
 BMPImage *copy_bmp(BMPImage *img);
 void free_bmp_image(BMPImage *img);
 
-#endif
+#endif // _BMP_TYPE_H_

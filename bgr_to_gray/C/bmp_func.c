@@ -148,21 +148,23 @@ int write_bmp(FILE *fp, BMPImage *img, LWORD *error_record)
 void show_bmp_info(const BMPImage *img)
 {
     // Show basic image information
+    printf("==========================\n");
     printf("size (byte): %d\n", img->header.stBMPFileHeader.u32FileSize);
     printf("height     : %d\n", img->header.stBMPInfoHeader.u32ImageHeight);
     printf("width      : %d\n", img->header.stBMPInfoHeader.u32ImageWidth);
-    printf("\n");
+    printf("==========================\n\n");
 }
 
 BMPImage *copy_bmp(BMPImage *img)
 {   
     LWORD error_record = 0;
+    LWORD u32i = 0;
     LWORD pixel_data_size = get_image_size_by_bytes(&img->header);
     BMPImage *img_copy = (BMPImage*)malloc(sizeof(BMPImage));
     img_copy->p08Data = (BYTE*)malloc(pixel_data_size);
 
     img_copy->header = img->header;
-    for(LWORD u32i = 0; u32i < pixel_data_size; u32i++)
+    for(u32i = 0; u32i < pixel_data_size; u32i++)
         img_copy->p08Data[u32i] = img->p08Data[u32i];
 
     bmp_header_check((BMPImage*)img_copy, &error_record);
@@ -183,13 +185,14 @@ void free_bmp_image(BMPImage *img)
 
 BMPImage *RGB2Gray(BMPImage *src_img)
 {
+    LWORD i = 0;
     BMPImage *gray_img = (BMPImage*)malloc(sizeof(BMPImage));
     LWORD pixel_data_size = get_image_size_by_bytes(&src_img->header);
     gray_img->header = src_img->header;
     gray_img->p08Data = (BYTE*)malloc(pixel_data_size);
 
     BYTE blue, green, red, gray;
-    for(int i = 0; i < pixel_data_size; i = i + 3)
+    for(i = 0; i < pixel_data_size; i = i + 3)
     {
         blue  = src_img->p08Data[i];
         green = src_img->p08Data[i + 1];

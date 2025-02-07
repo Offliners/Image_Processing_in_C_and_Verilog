@@ -15,4 +15,4 @@ typedef unsigned int   LWORD;
 
 #define LWORD_SIZE   (sizeof(LWORD))
 
-#endif
+#endif // _COMMON_H_
