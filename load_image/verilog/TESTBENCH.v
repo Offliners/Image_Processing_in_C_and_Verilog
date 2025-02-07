@@ -76,6 +76,7 @@ LOAD_BMP LOAD_BMP1(
     .ROM_ren(ROM_ren),
     .ROM_addr(ROM_addr),
     .RAM_ren(RAM_ren),
+    .RAM_wen(RAM_wen),
     .RAM_in(RAM_in),
     .RAM_addr(RAM_addr),
     .done(done)
@@ -102,7 +103,7 @@ always @(posedge done)begin
     // Write output BMP
     $display("\033[0;32mOutput BMP Image!\033[m");
     output_bmp_id = $fopen(`OUTPUT_BMP_IMAGE_PATH, "wb");
-    for(i = 1; i <= `BMP_TOTAL_SIZE; i = i + 4)
+    for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 4)
         $fwrite(output_bmp_id, "%u", {BMP_RAM1.ram_data[i+3], BMP_RAM1.ram_data[i+2], BMP_RAM1.ram_data[i+1], BMP_RAM1.ram_data[i]});
     $fclose(output_bmp_id);
 

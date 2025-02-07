@@ -101,7 +101,7 @@ end
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
-        RAM_addr <= 0;
+        RAM_addr <= `INIT_ADDR;
     else if(RAM_wen)
         RAM_addr <= RAM_addr + 1;
     else
@@ -109,7 +109,7 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 always @(*) begin
-    done = (RAM_addr > `BMP_TOTAL_SIZE) ? 1 : 0;
+    done = (RAM_addr > `BMP_TOTAL_SIZE && RAM_addr != `INIT_ADDR) ? 1 : 0;
 end
 
 endmodule
