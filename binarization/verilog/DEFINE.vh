@@ -8,7 +8,7 @@
 // BMP file path
 `define INPUT_BMP_IMAGE_PATH         "../lena256.bmp"
 `define OUTPUT_BMP_RAWDATA_TXT_PATH  "./temp_bmp.txt"
-`define OUTPUT_BMP_IMAGE_PATH        "./output_binarization.bmp"
+`define OUTPUT_BMP_IMAGE_PATH        "./output.bmp"
 
 // BMP info
 `define BMP_HEIGHT           256
@@ -24,6 +24,6 @@
 `define INIT_ADDR            {`ADDR_WIDTH{1'b1}}
 
 // Latency
-`define MAX_LATENCY          1_0000_0000
+`define MAX_LATENCY          100_0000
 
 `endif

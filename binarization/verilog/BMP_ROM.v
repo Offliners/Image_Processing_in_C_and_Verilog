@@ -4,7 +4,7 @@ module BMP_ROM (
     // Input signals
     clk,
     rst_n,
-    ROM_valid,
+    ROM_ren,
     ROM_addr,
 
     // Output signals
@@ -13,7 +13,7 @@ module BMP_ROM (
 
 input clk;
 input rst_n;
-input ROM_valid;
+input ROM_ren;
 input [`ADDR_WIDTH-1:0] ROM_addr;
 
 output reg [`BYTE_WIDTH-1:0] ROM_out;
@@ -25,7 +25,7 @@ initial begin
 end
 
 always @(posedge clk) begin
-    if(ROM_valid)
+    if(ROM_ren)
         ROM_out <= rom_data[ROM_addr];
 end
 

@@ -1,7 +1,7 @@
 .PHONY: clean
 
 CUR_DIR = ./
-OUTPUT_IMG = ./output_binarization.bmp
+OUTPUT_IMG = ./output.bmp
 
 all:
 	gcc ${CUR_DIR}*.c -o binarization.o -I${CUR_DIR}

@@ -5,7 +5,7 @@ TESTBENCH   = TESTBENCH.v
 COUTPUT     = $(DESIGN_NAME).out
 TBOUTPUT    = $(DESIGN_NAME).vcd
 TEMP_TXT    = temp_bmp.txt
-OUTPUT_BMP  = output_binarization.bmp
+OUTPUT_BMP  = output.bmp
 
 # TOOLS
 COMPILER = iverilog

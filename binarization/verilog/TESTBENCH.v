@@ -76,24 +76,24 @@ BGR2GRAY BGR2GRAY1(
     .rst_n(rst_n),
     .in_valid(in_valid),
     .ROM_out(ROM_out),
-    .ROM_valid(ROM_valid),
+    .ROM_ren(ROM_ren),
     .ROM_addr(ROM_addr),
     .RAM_ren(RAM_ren1),
     .RAM_wen(RAM_wen1),
     .RAM_in(RAM_in1),
     .RAM_addr(RAM_addr1),
-    .gray_done(gray_done)
+    .done(gray_done)
 );
 
 BMP_ROM BMP_ROM1 (
     .clk(clk),
     .rst_n(rst_n),
-    .ROM_valid(ROM_valid),
+    .ROM_ren(ROM_ren),
     .ROM_addr(ROM_addr),
     .ROM_out(ROM_out)
 );
 
-BMP_DUAL_PORT_RAM BMP_DUAL_PORT_RAM1(
+BMP_DUAL_PORT_RAM BMP_RAM1(
     .clk(clk),
     .RAM_ren1(RAM_ren1),
     .RAM_wen1(RAM_wen1),
@@ -124,8 +124,8 @@ always @(posedge done)begin
     // Write output BMP
     $display("\033[0;32mOutput BMP Image!\033[m");
     output_bmp_id = $fopen(`OUTPUT_BMP_IMAGE_PATH, "wb");
-    for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 4)
-        $fwrite(output_bmp_id, "%u", {BMP_DUAL_PORT_RAM1.ram_data[i+3], BMP_DUAL_PORT_RAM1.ram_data[i+2], BMP_DUAL_PORT_RAM1.ram_data[i+1], BMP_DUAL_PORT_RAM1.ram_data[i]});
+    for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 1)
+        $fwrite(output_bmp_id, "%c", BMP_RAM1.ram_data[i]);
     $fclose(output_bmp_id);
 
     #(100) $finish;

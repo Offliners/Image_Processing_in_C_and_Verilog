@@ -13,7 +13,7 @@ BMPImage *read_bmp(FILE *fp, LWORD *error_record)
 
     // Read BMP header
     rewind(fp);
-    int num_fread = fread(&img->header, BMP_HEADER_SIZE, 1, fp);
+    BYTE num_fread = fread(&img->header, BMP_HEADER_SIZE, 1, fp);
     if(!error_checker(num_fread == 1, error_record, ERROR_CANNOT_READ_BMP_HEADER, __LINE__))
         return NULL;
 
@@ -66,9 +66,9 @@ void *bmp_header_check(const BMPImage *img, LWORD *error_record)
         return NULL;
 }
 
-int error_checker(int condition, LWORD *error_record, LWORD error, int line)
+BYTE error_checker(BYTE condition, LWORD *error_record, LWORD error, LWORD line)
 {
-    int is_valid = 1;
+    BYTE is_valid = 1;
     if(!condition)
     {
         is_valid = 0;
@@ -127,11 +127,11 @@ LWORD get_bytes_per_pixel(BMPHeader *bmp_header)
     return bmp_header->stBMPInfoHeader.u16BitsPerPixel / BMP_BITS_PER_BYTE;
 }
 
-int write_bmp(FILE *fp, BMPImage *img, LWORD *error_record)
+BYTE write_bmp(FILE *fp, BMPImage *img, LWORD *error_record)
 {
     // Write BMP header
     rewind(fp);
-    int num_fwrite = fwrite(&img->header, BMP_HEADER_SIZE, 1, fp);
+    BYTE num_fwrite = fwrite(&img->header, BMP_HEADER_SIZE, 1, fp);
     if(!error_checker(num_fwrite == 1, error_record, ERROR_CANNOT_WRITE_BMP_HEADER, __LINE__))
         return FUNC_FAIL;
 
@@ -184,22 +184,23 @@ void free_bmp_image(BMPImage *img)
 
 BMPImage *RGB2Gray(BMPImage *src_img)
 {
+    LWORD u32i = 0;
     BMPImage *gray_img = (BMPImage*)malloc(sizeof(BMPImage));
     LWORD pixel_data_size = get_image_size_by_bytes(&src_img->header);
     gray_img->header = src_img->header;
     gray_img->p08Data = (BYTE*)malloc(pixel_data_size);
 
     BYTE blue, green, red, gray;
-    for(int i = 0; i < pixel_data_size; i = i + 3)
+    for(u32i = 0; u32i < pixel_data_size; u32i = u32i + 3)
     {
-        blue  = src_img->p08Data[i];
-        green = src_img->p08Data[i + 1];
-        red   = src_img->p08Data[i + 2];
+        blue  = src_img->p08Data[u32i];
+        green = src_img->p08Data[u32i + 1];
+        red   = src_img->p08Data[u32i + 2];
         gray  = (blue * 30 + green * 150 + red * 76) >> 8;
 
-        gray_img->p08Data[i]     = gray;
-        gray_img->p08Data[i + 1] = gray;
-        gray_img->p08Data[i + 2] = gray;
+        gray_img->p08Data[u32i]     = gray;
+        gray_img->p08Data[u32i + 1] = gray;
+        gray_img->p08Data[u32i + 2] = gray;
     }
 
     return gray_img;
@@ -207,17 +208,18 @@ BMPImage *RGB2Gray(BMPImage *src_img)
 
 BMPImage *binarize_bmp(BMPImage *src_img, BYTE threshold)
 {
+    LWORD u32i = 0;
     BMPImage *binary_img = (BMPImage*)malloc(sizeof(BMPImage));
     LWORD pixel_data_size = get_image_size_by_bytes(&src_img->header);
     binary_img->header = src_img->header;
     binary_img->p08Data = (BYTE*)malloc(pixel_data_size);
 
-    for(int i = 0; i < pixel_data_size; i = i + 1)
+    for(u32i = 0; u32i < pixel_data_size; u32i = u32i + 1)
     {
-        if(src_img->p08Data[i] > threshold)
-            binary_img->p08Data[i] = WHITE_PIXEL_DATA;
+        if(src_img->p08Data[u32i] > threshold)
+            binary_img->p08Data[u32i] = WHITE_PIXEL_DATA;
         else
-            binary_img->p08Data[i] = BLACK_PIXEL_DATA;
+            binary_img->p08Data[u32i] = BLACK_PIXEL_DATA;
     }
 
     return binary_img;

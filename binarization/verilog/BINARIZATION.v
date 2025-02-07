@@ -29,14 +29,14 @@ output reg done;
 
 integer i;
 integer threshold = 8'd127;
-reg [2:0] state, next_state;
+reg [1:0] state, next_state;
 reg dummy_read_done;
-parameter [2:0] IDLE           = 3'b000,
-                DUMMY_READ     = 3'b001,
-                READ_BMP_DATA  = 3'b010,
-                WRITE_BMP_DATA = 3'b011,
-                OP_DONE        = 3'b100;
+parameter [1:0] IDLE           = 2'b00,
+                READ_BMP_DATA  = 2'b01,
+                WRITE_BMP_DATA = 2'b10,
+                OP_DONE        = 2'b11;
 
+reg binary_start, rom_start;
 reg [`BYTE_WIDTH-1:0] bmp_gray_buf;
 
 always @(negedge rst_n) begin
@@ -56,11 +56,9 @@ always @(*) begin
         default:
             next_state = IDLE;
         IDLE:
-            next_state = (in_valid && gray_done) ? READ_BMP_DATA : IDLE;// (dummy_read_done ? READ_BMP_DATA : DUMMY_READ) : IDLE;
-        DUMMY_READ:
-            next_state = IDLE;
+            next_state = (in_valid && gray_done) ? READ_BMP_DATA : IDLE;
         READ_BMP_DATA:
-            next_state = WRITE_BMP_DATA;
+            next_state = binary_start ? WRITE_BMP_DATA : READ_BMP_DATA;
         WRITE_BMP_DATA:
             next_state = OP_DONE;
         OP_DONE:
@@ -76,10 +74,6 @@ always @(*) begin
         end
         IDLE: begin
             RAM_ren = 1'b0;
-            RAM_wen = 1'b0;
-        end
-        DUMMY_READ: begin
-            RAM_ren = 1'b1;
             RAM_wen = 1'b0;
         end
         READ_BMP_DATA: begin
@@ -99,15 +93,11 @@ end
 
 always @(*) begin
     case(state)
-        DUMMY_READ: begin
-            dummy_read_done = 1'b1;
-            bmp_gray_buf = RAM_out;
-        end
         READ_BMP_DATA: begin
             bmp_gray_buf = RAM_out;
         end
         WRITE_BMP_DATA: begin
-            RAM_in = bmp_gray_buf; //(bmp_gray_buf > threshold) ? 8'd255 : 8'd0;
+            RAM_in = binary_start ? bmp_gray_buf : ((bmp_gray_buf > threshold) ? 8'd255 : 8'd0);
         end
     endcase
 end
@@ -122,7 +112,8 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 always @(*) begin
-    done = (RAM_addr > `BMP_TOTAL_SIZE) ? 1 : 0;
+    done = (RAM_addr > `BMP_TOTAL_SIZE && RAM_addr != `INIT_ADDR) ? 1 : 0;
+    binary_start = (RAM_addr > `BMP_HEADER_SIZE) ? 1 : 0;
 end
 
 endmodule

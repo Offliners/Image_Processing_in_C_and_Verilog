@@ -13,7 +13,12 @@ $ make
 $ ./binarization.o ../lena256.bmp
 
 # Verilog
+$ cd ./binarization/verilog
 $ make check
 $ make simulate
 $ make wave
+
+# Confirm whether the two BMP images are the same
+$ cd ./binarization
+$ python3 compare.py
 ```
