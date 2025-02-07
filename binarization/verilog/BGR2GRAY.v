@@ -5,14 +5,14 @@ module BGR2GRAY(
     clk,
     rst_n,
     in_valid,
-    ROM_Q,
+    ROM_out,
 
     // Output signals
     ROM_valid,
     ROM_addr,
     RAM_ren,
     RAM_wen,
-    RAM_D,
+    RAM_in,
     RAM_addr,
     gray_done
 );
@@ -20,12 +20,12 @@ module BGR2GRAY(
 input clk;
 input rst_n;
 input in_valid;
-input [`BYTE_WIDTH-1:0] ROM_Q;
+input [`BYTE_WIDTH-1:0] ROM_out;
 
 output reg ROM_valid;
 output reg [`ADDR_WIDTH-1:0] ROM_addr;
 output reg RAM_ren, RAM_wen;
-output reg [`BYTE_WIDTH-1:0] RAM_D;
+output reg [`BYTE_WIDTH-1:0] RAM_in;
 output reg [`ADDR_WIDTH-1:0] RAM_addr;
 output reg gray_done;
 
@@ -76,33 +76,33 @@ always @(*) begin
         case(state)
             default: begin
                 ROM_valid = 1'b0;
-                RAM_ren  = 1'b0;
-                RAM_wen  = 1'b0;
+                RAM_ren   = 1'b0;
+                RAM_wen   = 1'b0;
             end
             IDLE: begin
                 ROM_valid = 1'b0;
-                RAM_ren  = 1'b0;
-                RAM_wen  = 1'b0;
+                RAM_ren   = 1'b0;
+                RAM_wen   = 1'b0;
             end
             READ_BMP_HEADER: begin
                 ROM_valid = 1'b1;
-                RAM_ren  = 1'b1;
-                RAM_wen  = 1'b0;
+                RAM_ren   = 1'b1;
+                RAM_wen   = 1'b0;
             end
             WRITE_BMP_HEADER: begin
                 ROM_valid = 1'b0;
-                RAM_ren  = 1'b0;
-                RAM_wen  = 1'b1;
+                RAM_ren   = 1'b0;
+                RAM_wen   = 1'b1;
             end
             READ_BMP_DATA: begin
                 ROM_valid = 1'b1;
-                RAM_ren  = 1'b1;
-                RAM_wen  = 1'b0;
+                RAM_ren   = 1'b1;
+                RAM_wen   = 1'b0;
             end
             WRITE_BMP_DATA: begin
                 ROM_valid = 1'b0;
-                RAM_ren  = 1'b0;
-                RAM_wen  = 1'b1;
+                RAM_ren   = 1'b0;
+                RAM_wen   = 1'b1;
             end
         endcase
     end
@@ -111,16 +111,16 @@ end
 always @(*) begin
     case(state)
         READ_BMP_HEADER: begin
-            bmp_data_buf[0] = ROM_Q;
+            bmp_data_buf[0] = ROM_out;
         end
         WRITE_BMP_HEADER: begin
-            RAM_D = bmp_data_buf[0];
+            RAM_in = bmp_data_buf[0];
         end
         READ_BMP_DATA: begin
-            bmp_data_buf[read_bgr_count] = ROM_Q;
+            bmp_data_buf[read_bgr_count] = ROM_out;
         end
         WRITE_BMP_DATA: begin
-            RAM_D = gray_data_buf;
+            RAM_in = gray_data_buf;
         end
     endcase
 end
@@ -142,7 +142,7 @@ end
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
-        RAM_addr <= 0;
+        RAM_addr <= `INIT_ADDR;
     else if(RAM_wen)
         RAM_addr <= RAM_addr + 1;
     else
@@ -176,7 +176,7 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 always @(*) begin
-    gray_done = (RAM_addr > `BMP_TOTAL_SIZE) ? 1 : 0;
+    gray_done = (RAM_addr > `BMP_TOTAL_SIZE && RAM_addr != `INIT_ADDR) ? 1 : 0;
     read_bgr_done = (read_bgr_count == 2'b10) ? 1 : 0;
     write_gray_done = (write_gray_count == 2'b10) ? 1 : 0;
 end

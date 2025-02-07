@@ -8,7 +8,7 @@ module BMP_ROM (
     ROM_addr,
 
     // Output signals
-    ROM_Q
+    ROM_out
 );
 
 input clk;
@@ -16,7 +16,7 @@ input rst_n;
 input ROM_valid;
 input [`ADDR_WIDTH-1:0] ROM_addr;
 
-output reg [`BYTE_WIDTH-1:0] ROM_Q;
+output reg [`BYTE_WIDTH-1:0] ROM_out;
 
 reg [`BYTE_WIDTH-1:0] rom_data [0:`BMP_TOTAL_SIZE];
 
@@ -26,7 +26,7 @@ end
 
 always @(posedge clk) begin
     if(ROM_valid)
-        ROM_Q <= rom_data[ROM_addr];
+        ROM_out <= rom_data[ROM_addr];
 end
 
 endmodule
