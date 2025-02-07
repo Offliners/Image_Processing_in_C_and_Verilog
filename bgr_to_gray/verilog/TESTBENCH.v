@@ -13,11 +13,11 @@ integer input_bmp_id;
 integer txt_bmp_id;
 integer output_bmp_id;
 
-wire [`BYTE_WIDTH-1:0] ROM_Q;
+wire [`BYTE_WIDTH-1:0] ROM_out;
 wire ROM_valid;
 wire [`ADDR_WIDTH-1:0] ROM_addr;
-wire RAM_valid;
-wire [`BYTE_WIDTH-1:0] RAM_D;
+wire RAM_wen;
+wire [`BYTE_WIDTH-1:0] RAM_in, RAM_out;
 wire [`ADDR_WIDTH-1:0] RAM_addr;
 wire done;
 
@@ -71,11 +71,12 @@ BGR2GRAY BGR2GRAY1(
     .clk(clk),
     .rst_n(rst_n),
     .in_valid(in_valid),
-    .ROM_Q(ROM_Q),
-    .ROM_valid(ROM_valid),
+    .ROM_out(ROM_out),
+    .ROM_ren(ROM_ren),
     .ROM_addr(ROM_addr),
-    .RAM_valid(RAM_valid),
-    .RAM_D(RAM_D),
+    .RAM_ren(RAM_ren),
+    .RAM_wen(RAM_wen),
+    .RAM_in(RAM_in),
     .RAM_addr(RAM_addr),
     .done(done)
 );
