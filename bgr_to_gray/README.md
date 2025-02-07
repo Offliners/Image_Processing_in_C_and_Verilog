@@ -13,9 +13,14 @@ $ make
 $ ./bgr2gray.o ../lena256.bmp
 
 # Verilog
+$ cd ./bgr_to_gray/verilog
 $ make check
 $ make simulate
 $ make wave
+
+# Confirm whether the two BMP images are the same
+$ cd ./bgr_to_gray
+$ python3 compare.py
 ```
 
 ## BGR to Grayscale Conversion

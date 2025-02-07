@@ -13,7 +13,7 @@ BMPImage *read_bmp(FILE *fp, LWORD *error_record)
 
     // Read BMP header
     rewind(fp);
-    int num_fread = fread(&img->header, BMP_HEADER_SIZE, 1, fp);
+    BYTE num_fread = fread(&img->header, BMP_HEADER_SIZE, 1, fp);
     if(!error_checker(num_fread == 1, error_record, ERROR_CANNOT_READ_BMP_HEADER, __LINE__))
         return NULL;
 
@@ -66,9 +66,9 @@ void *bmp_header_check(const BMPImage *img, LWORD *error_record)
         return NULL;
 }
 
-int error_checker(int condition, LWORD *error_record, LWORD error, int line)
+BYTE error_checker(BYTE condition, LWORD *error_record, LWORD error, LWORD line)
 {
-    int is_valid = 1;
+    BYTE is_valid = 1;
     if(!condition)
     {
         is_valid = 0;
@@ -127,11 +127,11 @@ LWORD get_bytes_per_pixel(BMPHeader *bmp_header)
     return bmp_header->stBMPInfoHeader.u16BitsPerPixel / BMP_BITS_PER_BYTE;
 }
 
-int write_bmp(FILE *fp, BMPImage *img, LWORD *error_record)
+BYTE write_bmp(FILE *fp, BMPImage *img, LWORD *error_record)
 {
     // Write BMP header
     rewind(fp);
-    int num_fwrite = fwrite(&img->header, BMP_HEADER_SIZE, 1, fp);
+    BYTE num_fwrite = fwrite(&img->header, BMP_HEADER_SIZE, 1, fp);
     if(!error_checker(num_fwrite == 1, error_record, ERROR_CANNOT_WRITE_BMP_HEADER, __LINE__))
         return FUNC_FAIL;
 

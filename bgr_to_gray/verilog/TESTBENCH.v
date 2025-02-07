@@ -4,7 +4,7 @@
 `include "DEFINE.vh"
 `include "BGR2GRAY.v"
 `include "BMP_ROM.v"
-`include "BMP_RAM.v"
+`include "BMP_SINGLE_PORT_RAM.v"
 
 module TESTBENCH();
 
@@ -80,27 +80,29 @@ BGR2GRAY BGR2GRAY1(
     .done(done)
 );
 
-BMP_ROM BMP_ROM1 (
+BMP_ROM BMP_ROM1(
     .clk(clk),
     .rst_n(rst_n),
-    .ROM_valid(ROM_valid),
+    .ROM_ren(ROM_ren),
     .ROM_addr(ROM_addr),
-    .ROM_Q(ROM_Q)
+    .ROM_out(ROM_out)
 );
 
-BMP_RAM BMP_RAM1(
+BMP_SINGLE_PORT_RAM BMP_RAM1(
     .clk(clk),
-    .RAM_valid(RAM_valid),
+    .RAM_ren(RAM_ren),
+    .RAM_wen(RAM_wen),
     .RAM_addr(RAM_addr),
-    .RAM_D(RAM_D)
+    .RAM_in(RAM_in),
+    .RAM_out(RAM_out)
 );
 
 always @(posedge done)begin
     // Write output BMP
     $display("\033[0;32mOutput BMP Image!\033[m");
     output_bmp_id = $fopen(`OUTPUT_BMP_IMAGE_PATH, "wb");
-    for(i = 1; i <= `BMP_TOTAL_SIZE; i = i + 4)
-        $fwrite(output_bmp_id, "%u", {BMP_RAM1.ram_data[i+3], BMP_RAM1.ram_data[i+2], BMP_RAM1.ram_data[i+1], BMP_RAM1.ram_data[i]});
+    for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 1)
+        $fwrite(output_bmp_id, "%c", BMP_RAM1.ram_data[i]);
     $fclose(output_bmp_id);
 
     #(100) $finish;

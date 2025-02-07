@@ -3,9 +3,9 @@
 #include "common.h"
 #include "bmp_type.h"
 
-int check_img_exist(char *filename);
+BYTE check_img_exist(char *filename);
 BMPImage *read_image(const char *filename);
-int write_image(const char *filename, BMPImage *img);
+BYTE write_image(const char *filename, BMPImage *img);
 
 int main(int argc, char *argv[])
 {
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     return u08Ret;
 }
 
-int check_img_exist(char *filename)
+BYTE check_img_exist(char *filename)
 {
     FILE *fp = fopen(filename, "r");
 
@@ -64,7 +64,7 @@ BMPImage *read_image(const char *filename)
     return img;
 }
 
-int write_image(const char *filename, BMPImage *img)
+BYTE write_image(const char *filename, BMPImage *img)
 {
     if(!img)
     {

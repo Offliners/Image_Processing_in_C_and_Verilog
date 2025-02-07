@@ -82,7 +82,7 @@ LOAD_BMP LOAD_BMP1(
     .done(done)
 );
 
-BMP_ROM BMP_ROM1 (
+BMP_ROM BMP_ROM1(
     .clk(clk),
     .rst_n(rst_n),
     .ROM_ren(ROM_ren),
