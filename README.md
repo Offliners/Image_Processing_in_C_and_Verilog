@@ -112,3 +112,4 @@ flowchart LR
 * GNU Compiler Collection
 * Icarus Verilog
 * GTKWave
+* Python3

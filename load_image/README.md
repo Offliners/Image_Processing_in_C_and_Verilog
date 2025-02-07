@@ -13,9 +13,14 @@ $ make
 $ ./load_image.o ../lena256.bmp
 
 # Verilog
+$ cd ./load_image/verilog
 $ make check
 $ make simulate
 $ make wave
+
+# Confirm whether the two BMP images are the same
+$ cd ./load_image
+$ python3 compare.py 
 ```
 
 ## BMP File Format

@@ -35,6 +35,7 @@ parameter [1:0] IDLE      = 2'b00,
                 READ      = 2'b01,
                 WRITE     = 2'b10;
 
+reg rom_start;
 reg [`BYTE_WIDTH-1:0] bmp_data_buf;
 
 always @(posedge clk or negedge rst_n) begin
@@ -92,7 +93,7 @@ end
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
-        ROM_addr <= 0;
+        ROM_addr <= `INIT_ADDR;
     else if(ROM_ren)
         ROM_addr <= ROM_addr + 1;
     else
@@ -102,13 +103,14 @@ end
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
         RAM_addr <= `INIT_ADDR;
-    else if(RAM_wen)
+    else if(RAM_wen && rom_start)
         RAM_addr <= RAM_addr + 1;
     else
         RAM_addr <= RAM_addr;
 end
 
 always @(*) begin
+    rom_start = (ROM_addr > 0 && ROM_addr != `INIT_ADDR) ? 1 : 0;
     done = (RAM_addr > `BMP_TOTAL_SIZE && RAM_addr != `INIT_ADDR) ? 1 : 0;
 end
 
