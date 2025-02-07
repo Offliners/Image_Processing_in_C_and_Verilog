@@ -34,7 +34,7 @@ wave: $(TBOUTPUT)
 # CLEAN THE FILE
 .PHONY : clean
 clean:
-	@echo "Clean $(COUTPUT) $(TBOUTPUT)"
+	@echo "Clean $(COUTPUT) $(TBOUTPUT) $(TEMP_TXT) $(OUTPUT_BMP)"
 	@rm -rf $(COUTPUT) $(TBOUTPUT) $(TEMP_TXT) $(OUTPUT_BMP)
 
 # DISPLAY THE HELP
