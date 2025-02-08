@@ -35,7 +35,8 @@ parameter [2:0] IDLE             = 3'b000,
                 READ_BMP_HEADER  = 3'b001,
                 WRITE_BMP_HEADER = 3'b010,
                 READ_BMP_DATA    = 3'b011,
-                WRITE_BMP_DATA   = 3'b100;
+                WRITE_BMP_DATA   = 3'b100,
+                GRAY_DONE        = 3'b101;
 
 reg rom_start;
 reg [1:0] read_bgr_count, write_gray_count;
@@ -63,7 +64,9 @@ always @(*) begin
         READ_BMP_DATA:
             next_state = read_bgr_done ? WRITE_BMP_DATA : READ_BMP_DATA; 
         WRITE_BMP_DATA:
-            next_state = done ? IDLE : (write_gray_done ? READ_BMP_DATA : WRITE_BMP_DATA);
+            next_state = done ? GRAY_DONE : (write_gray_done ? READ_BMP_DATA : WRITE_BMP_DATA);
+        GRAY_DONE:
+            next_state = GRAY_DONE;
     endcase
 end
 
@@ -93,6 +96,10 @@ always @(*) begin
         WRITE_BMP_DATA: begin
             ROM_ren = 1'b0;
             RAM_wen = 1'b1;
+        end
+        GRAY_DONE: begin
+            ROM_ren = 1'b0;
+            RAM_wen = 1'b0;
         end
     endcase
 end

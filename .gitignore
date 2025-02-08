@@ -2,3 +2,15 @@
 *.vcd
 *.txt
 *.out
+
+// load_image
+load_image/C/*.bmp
+load_image/RTL/*.bmp
+
+// bgr_to_gray
+bgr_to_gray/C/*.bmp
+bgr_to_gray/RTL/*.bmp
+
+// binarization
+binarization/C/*.bmp
+binarization/RTL/*.bmp
