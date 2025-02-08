@@ -17,7 +17,7 @@ input RAM_ren, RAM_wen;
 input [`ADDR_WIDTH-1:0] RAM_addr;
 input [`BYTE_WIDTH-1:0] RAM_in;
 
-output reg [`BYTE_WIDTH-1:0] RAM_out;
+output [`BYTE_WIDTH-1:0] RAM_out;
 
 integer i;
 reg [`BYTE_WIDTH-1:0] mem_data;
@@ -31,12 +31,8 @@ end
 always @(posedge clk) begin
     if(RAM_wen && !RAM_ren)
         ram_data[RAM_addr] <= RAM_in;
-    if(RAM_ren && !RAM_wen)
-        mem_data <= ram_data[RAM_addr];
 end
 
-always @(*) begin
-    RAM_out = (RAM_ren && (!RAM_wen)) ? mem_data : 0;
-end
+assign RAM_out = (RAM_ren && (!RAM_wen)) ? ram_data[RAM_addr] : 0;
 
 endmodule
