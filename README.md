@@ -53,7 +53,7 @@ Read image with salt and pepper noise from BMP (bitmap) file, and then use media
 <details>
 <summary>More</summary>
 
-| Input                         | Output                  |
+| Input                         | Output (Filter size: 3) |
 | ----------------------------- | ----------------------- |
 | ![input](./median_filter/lena256_noise.bmp) | ![output](./median_filter/output_filtered.bmp) |
 

@@ -251,7 +251,6 @@ BMPImage *MedianFilter(BMPImage *src_img, LWORD mask_size)
     BYTE offset = mask_size / 2;
     LWORD mask_area = mask_size * mask_size;
     BMPColorTable *mask = (BMPColorTable*)malloc(mask_area * sizeof(BMPColorTable));
-    printf("%d\n", count);
     for(u32i = offset; u32i < img_height - offset; u32i++)
     {
         for(u32j = offset; u32j < img_width - offset; u32j++)
