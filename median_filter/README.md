@@ -1,7 +1,7 @@
 # Median Filter
 Read image with salt and pepper noise from BMP (bitmap) file, and then use median filter to remove noise.
 
-| Input                         | Output (Filter size: 3)          |
+| Input                         | Output (filter size: 3)          |
 | ----------------------------- | -------------------------------- |
 | ![input](./lena256_noise.bmp) | ![output](./output_filtered.bmp) |
 

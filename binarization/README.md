@@ -1,7 +1,7 @@
 # Binarization
 Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale. Finally, set pixels to white or black determined by threshold.
 
-| Input                   | Output                               |
+| Input                   | Output (threshold: 8'd127)           |
 | ----------------------- | ------------------------------------ |
 | ![input](./lena256.bmp) | ![output](./output_binarization.bmp) |
 

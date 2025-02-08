@@ -41,7 +41,7 @@ Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 <details>
 <summary>More</summary>
 
-| Input                   | Output                               |
+| Input                   | Output (threshold: 8'd127)           |
 | ----------------------- | ------------------------------------ |
 | ![input](./binarization/lena256.bmp) | ![output](./binarization/output_binarization.bmp) |
 
@@ -53,7 +53,7 @@ Read image with salt and pepper noise from BMP (bitmap) file, and then use media
 <details>
 <summary>More</summary>
 
-| Input                         | Output (Filter size: 3) |
+| Input                         | Output (filter size: 3) |
 | ----------------------------- | ----------------------- |
 | ![input](./median_filter/lena256_noise.bmp) | ![output](./median_filter/output_filtered.bmp) |
 
