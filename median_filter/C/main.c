@@ -9,7 +9,7 @@ BYTE write_image(const char *filename, BMPImage *img);
 
 int main(int argc, char *argv[])
 {
-    if(argc != 2)
+    if(argc != 3)
     {
         printf(RED_COLOR "Error arguments!\n" ENDL_COLOR);
         return FUNC_FAIL;
@@ -23,13 +23,22 @@ int main(int argc, char *argv[])
     else
         printf(GREEN_COLOR "Image found!\n\n" ENDL_COLOR);
 
+    LWORD mask_size = atoi(argv[2]);
+    if(mask_size % 2 == 0)
+    {
+        printf(RED_COLOR "The size of median filter cannot be even!\n" ENDL_COLOR);
+        return FUNC_FAIL;
+    }
+    else
+        printf(GREEN_COLOR "The size of median filter is %d\n\n" ENDL_COLOR, mask_size);
+
     BYTE u08Ret = FUNC_SUC;
     BMPImage *img = read_image(argv[1]);
 
     printf(YELLOW_COLOR "Input Image\n" ENDL_COLOR);
     show_bmp_info(img);
 
-    BMPImage *filtered_img = MedianFilter(img);
+    BMPImage *filtered_img = MedianFilter(img, mask_size);
 
     printf(YELLOW_COLOR "Output Image\n" ENDL_COLOR);
     show_bmp_info(filtered_img);

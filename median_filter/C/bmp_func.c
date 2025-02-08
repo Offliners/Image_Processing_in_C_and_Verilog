@@ -220,7 +220,7 @@ void free_pixel_matrix(BMPColorTable **mat, LWORD height)
     }
 }
 
-BMPImage *MedianFilter(BMPImage *src_img)
+BMPImage *MedianFilter(BMPImage *src_img, LWORD mask_size)
 {
     LWORD u32i = 0;
     LWORD u32j = 0;
@@ -248,9 +248,9 @@ BMPImage *MedianFilter(BMPImage *src_img)
     BMPColorTable **copy_pixel = copy_pixel_matrix(pixel, img_height, img_width);
     LWORD u32x, u32y, u32num;
     BMPColorTable median_pixel;
-    BYTE offset = MEDIAN_FILTER_MASK_SIZE / 2;
-    LWORD mask_size = MEDIAN_FILTER_MASK_SIZE * MEDIAN_FILTER_MASK_SIZE;
-    BMPColorTable *mask = (BMPColorTable*)malloc(mask_size * sizeof(BMPColorTable));
+    BYTE offset = mask_size / 2;
+    LWORD mask_area = mask_size * mask_size;
+    BMPColorTable *mask = (BMPColorTable*)malloc(mask_area * sizeof(BMPColorTable));
     printf("%d\n", count);
     for(u32i = offset; u32i < img_height - offset; u32i++)
     {
@@ -268,7 +268,7 @@ BMPImage *MedianFilter(BMPImage *src_img)
                 }
             }
 
-            median_pixel = cal_median(mask, mask_size);
+            median_pixel = cal_median(mask, mask_area);
 
             copy_pixel[u32i][u32j].u08Blue  = median_pixel.u08Blue;
             copy_pixel[u32i][u32j].u08Green = median_pixel.u08Green;

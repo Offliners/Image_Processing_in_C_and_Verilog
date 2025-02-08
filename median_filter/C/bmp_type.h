@@ -11,9 +11,6 @@
 #define BMP_BITS_PER_PIXEL   24
 #define BMP_BITS_PER_BYTE    8
 
-// Filter setting
-#define MEDIAN_FILTER_MASK_SIZE 3
-
 // BMP format
 #pragma pack(push)
 #pragma pack(1)
@@ -147,7 +144,7 @@ void free_bmp_image(BMPImage *img);
 BMPColorTable **create_pixel_matrix(LWORD height, LWORD width);
 BMPColorTable **copy_pixel_matrix(BMPColorTable **mat, LWORD height, LWORD width);
 void free_pixel_matrix(BMPColorTable **mat, LWORD height);
-BMPImage *MedianFilter(BMPImage *src_img);
+BMPImage *MedianFilter(BMPImage *src_img, LWORD mask_size);
 BMPColorTable cal_median(BMPColorTable *arr, LWORD arr_size);
 void swap_data(BMPColorTable *a, BMPColorTable *b);
 

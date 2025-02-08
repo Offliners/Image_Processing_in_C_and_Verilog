@@ -14,7 +14,7 @@ $ python3 add_noise.py
 # C
 $ cd ./median_filter/C
 $ make
-$ ./median_filter.o ../lena256_noise.bmp
+$ ./median_filter.o ../lena256_noise.bmp 3 # set the size of median filter to 3
 
 # RTL
 $ cd ./median_filter/RTL
