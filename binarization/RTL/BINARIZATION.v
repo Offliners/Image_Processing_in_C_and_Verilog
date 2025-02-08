@@ -90,14 +90,14 @@ always @(*) begin
             bmp_gray_buf = RAM_out;
         end
         WRITE_BMP_DATA: begin
-            RAM_in = binary_start ? ((bmp_gray_buf > threshold) ? 8'd255 : 8'd0) : bmp_gray_buf;
+            RAM_in = (bmp_gray_buf > threshold) ? 8'd255 : 8'd0;
         end
     endcase
 end
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
-        RAM_addr <= `INIT_ADDR;
+        RAM_addr <= `BMP_HEADER_SIZE;
     else if(RAM_wen)
         RAM_addr <= RAM_addr + 1;
     else
@@ -105,7 +105,6 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 always @(*) begin
-    binary_start = (RAM_addr > `BMP_HEADER_SIZE) ? 1 : 0;
     done = (RAM_addr > `BMP_TOTAL_SIZE && RAM_addr != `INIT_ADDR) ? 1 : 0;
 end
 
