@@ -12,8 +12,8 @@ $ cd ./load_image/C
 $ make
 $ ./load_image.o ../lena256.bmp
 
-# Verilog
-$ cd ./load_image/verilog
+# RTL
+$ cd ./load_image/RTL
 $ make check
 $ make simulate
 $ make wave

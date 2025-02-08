@@ -12,8 +12,8 @@ $ cd ./bgr_to_gray/C
 $ make
 $ ./bgr2gray.o ../lena256.bmp
 
-# Verilog
-$ cd ./bgr_to_gray/verilog
+# RTL
+$ cd ./bgr_to_gray/RTL
 $ make check
 $ make simulate
 $ make wave

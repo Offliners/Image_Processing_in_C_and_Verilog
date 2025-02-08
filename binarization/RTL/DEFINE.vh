@@ -24,6 +24,6 @@
 `define INIT_ADDR            {`ADDR_WIDTH{1'b1}}
 
 // Latency
-`define MAX_LATENCY          100_0000
+`define MAX_LATENCY          200_0000
 
 `endif

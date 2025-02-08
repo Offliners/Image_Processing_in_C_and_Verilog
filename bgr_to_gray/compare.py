@@ -19,9 +19,9 @@ def parse_args() -> Namespace:
     )
 
     parser.add_argument(
-        "-v",
+        "-rtl",
         type=str,
-        default="./verilog/output.bmp",
+        default="./RTL/output.bmp",
         help="Path to BMP image processed by Verilog"
     )
 
@@ -51,19 +51,19 @@ def main(args: ArgumentParser) -> None:
         print(bcolors.RED + "Cannot find BMP file processed by C" + bcolors.ENDC)
         show_fail()
     
-    if not os.path.exists(args.v):
+    if not os.path.exists(args.rtl):
         print(bcolors.RED + "Cannot find BMP file processed by Verilog" + bcolors.ENDC)
         show_fail()
 
     c_bmp_size = os.path.getsize(args.c)
-    verilog_bmp_size = os.path.getsize(args.v)
+    verilog_bmp_size = os.path.getsize(args.rtl)
 
     if c_bmp_size != verilog_bmp_size:
         print(bcolors.RED + "The two pictures have different sizes!" + bcolors.ENDC)
         show_fail()
     
     c_bmp_data = read_file(args.c, c_bmp_size)
-    verilog_bmp_data = read_file(args.v, verilog_bmp_size)
+    verilog_bmp_data = read_file(args.rtl, verilog_bmp_size)
     diff_info = data_compare(c_bmp_data, verilog_bmp_data)
 
     if diff_info:

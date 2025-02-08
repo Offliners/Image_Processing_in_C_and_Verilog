@@ -12,8 +12,8 @@ $ cd ./binarization/C
 $ make
 $ ./binarization.o ../lena256.bmp
 
-# Verilog
-$ cd ./binarization/verilog
+# RTL
+$ cd ./binarization/RTL
 $ make check
 $ make simulate
 $ make wave

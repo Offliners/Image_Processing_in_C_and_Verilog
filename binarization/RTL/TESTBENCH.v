@@ -66,7 +66,10 @@ initial begin
     while(!done) begin
         latency = latency + 1;
         @(negedge clk);
-        if(latency > `MAX_LATENCY) display_fail;
+        if(latency > `MAX_LATENCY) begin
+            $display("\033[0;31m        Timeout !!! \033[m");
+            display_fail;
+        end
     end
     $display("\033[0;32mThe execution latency are %d cycles\033[m", latency);
 end
@@ -124,7 +127,7 @@ always @(posedge done)begin
     // Write output BMP
     $display("\033[0;32mOutput BMP Image!\033[m");
     output_bmp_id = $fopen(`OUTPUT_BMP_IMAGE_PATH, "wb");
-    for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 1)
+    for(i = 1; i <= `BMP_TOTAL_SIZE; i = i + 1)
         $fwrite(output_bmp_id, "%c", BMP_RAM1.ram_data[i]);
     $fclose(output_bmp_id);
 
