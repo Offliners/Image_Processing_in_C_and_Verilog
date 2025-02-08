@@ -1,12 +1,11 @@
 # Image Processing in C & Verilog
-In this repository there are some image processing algorithms implemented using C and Verilog
+In this repository there are some image processing algorithms implemented using C and Verilog, and then use Python3 to compare the result whether there is any difference.
 
 ## Table of Contents
 * [Table of Contents](#table-of-contents)
 * [Contents](#contents)
     + [Load Image](#load-image)
     + [BGR to Gray](#bgr-to-gray)
-    + [Rotate Image](#rotate-image)
     + [Binarization](#binarization)
 * [Image Processing Flow](#image-processing-flow)
 * [Tools](#tools)
@@ -32,18 +31,6 @@ Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 | Input                   | Output                       |
 | ----------------------- | ---------------------------- |
 | ![input](./bgr_to_gray/lena256.bmp) | ![output](./bgr_to_gray/output_gray.bmp) |
-
-</details>
-
-### [Rotate Image](./rotate_image/README.md)
-Read image from BMP (bitmap) file, and then rotate it in 90 degree (clockwise).
-
-<details>
-<summary>More</summary>
-
-| Input                   | Output                         |
-| ----------------------- | ------------------------------ |
-| ![input](./rotate_image/lena256.bmp) | ![output](./rotate_image/output_rot_90.bmp) |
 
 </details>
 
