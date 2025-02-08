@@ -48,7 +48,7 @@ def write_file(path: str, size: int, data: List[str], mode: str = "wb") -> None:
             f.write(binascii.unhexlify(data[i]))
 
 
-def add_noise(img: List[str], salt_ratio: float = 0.05, pepper_ratio: float = 0.05) -> List[str]:
+def add_noise(img: List[str], noise_ratio: float = 0.05) -> List[str]:
     bmp_header_size = 54
     bmp_pixel_data = img[bmp_header_size:]
 
@@ -66,10 +66,9 @@ def add_noise(img: List[str], salt_ratio: float = 0.05, pepper_ratio: float = 0.
         green = bmp_pixel_data[i + 1]
         red   = bmp_pixel_data[i + 2]
 
-        if random.random() < salt_ratio:
-            bgr_data.append(['ff', 'ff', 'ff']) # white
-        elif random.random() < pepper_ratio:
-            bgr_data.append(['00', '00', '00']) # black
+        if random.random() < noise_ratio:
+            noise_data = random.choices(['00', 'ff'], k=3)
+            bgr_data.append(noise_data) 
         else:
             bgr_data.append([blue, green, red])
 
