@@ -48,7 +48,7 @@ def write_file(path: str, size: int, data: List[str], mode: str = "wb") -> None:
             f.write(binascii.unhexlify(data[i]))
 
 
-def add_noise(img: List[str], noise_ratio: float = 0.05) -> List[str]:
+def add_noise(img: List[str], noise_ratio: float = 0.01) -> List[str]:
     bmp_header_size = 54
     bmp_pixel_data = img[bmp_header_size:]
 

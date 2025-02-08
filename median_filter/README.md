@@ -1,9 +1,9 @@
 # Median Filter
 Read image with salt and pepper noise from BMP (bitmap) file, and then use median filter to remove noise.
 
-| Input                         | Output                  |
-| ----------------------------- | ----------------------- |
-| ![input](./lena256_noise.bmp) | ![output](./output.bmp) |
+| Input                         | Output                           |
+| ----------------------------- | -------------------------------- |
+| ![input](./lena256_noise.bmp) | ![output](./output_filtered.bmp) |
 
 ## Usage
 ```shell
@@ -14,7 +14,7 @@ $ python3 add_noise.py
 # C
 $ cd ./median_filter/C
 $ make
-$ ./median_filter.o ../lena256.bmp
+$ ./median_filter.o ../lena256_noise.bmp
 
 # RTL
 $ cd ./median_filter/RTL

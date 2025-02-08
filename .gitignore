@@ -14,3 +14,7 @@ bgr_to_gray/RTL/*.bmp
 // binarization
 binarization/C/*.bmp
 binarization/RTL/*.bmp
+
+// median_filter
+median_filter/C/*.bmp
+median_filter/RTL/*.bmp
