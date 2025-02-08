@@ -29,6 +29,13 @@ def parse_args() -> Namespace:
         help="Path to BMP image with noise"
     )
 
+    parser.add_argument(
+        "-r",
+        type=float,
+        default=0.01,
+        help="Ratio of noise"
+    )
+
     args = parser.parse_args()
     return args
 
@@ -86,7 +93,7 @@ def main(args: ArgumentParser) -> None:
 
     bmp_size = os.path.getsize(args.i)
     img = read_file(args.i, bmp_size)
-    noise_img = add_noise(img)
+    noise_img = add_noise(img, args.r)
 
     write_file(args.o, bmp_size, noise_img)
     show_pass()
