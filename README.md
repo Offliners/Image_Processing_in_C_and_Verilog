@@ -7,6 +7,7 @@ In this repository there are some image processing algorithms implemented using 
     + [Load Image](#load-image)
     + [BGR to Gray](#bgr-to-gray)
     + [Binarization](#binarization)
+    + [Mean Filter](#mean-filter)
     + [Median Filter](#median-filter)
 * [Image Processing Flow](#image-processing-flow)
 * [Tools](#tools)
@@ -44,6 +45,18 @@ Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 | Input                   | Output (threshold: 8'd127)           |
 | ----------------------- | ------------------------------------ |
 | ![input](./binarization/lena256.bmp) | ![output](./binarization/output_binarization.bmp) |
+
+</details>
+
+### [Mean Filter](./mean_filter/README.md)
+Read image with salt and pepper noise from BMP (bitmap) file, and then use mean filter to remove noise.
+
+<details>
+<summary>More</summary>
+
+| Input                         | Output (filter size: 3) |
+| ----------------------------- | ----------------------- |
+| ![input](./mean_filter/lena256_noise.bmp) | ![output](./mean_filter/output_filtered.bmp) |
 
 </details>
 
