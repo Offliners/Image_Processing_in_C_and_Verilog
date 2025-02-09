@@ -74,7 +74,7 @@ def add_noise(img: List[str], noise_ratio: float = 0.01) -> List[str]:
         red   = bmp_pixel_data[i + 2]
 
         if random.random() < noise_ratio:
-            noise_data = random.choices(['00', 'ff'], k=3)
+            noise_data = random.choices(['00', 'ff'], k=img_channel)
             bgr_data.append(noise_data) 
         else:
             bgr_data.append([blue, green, red])
