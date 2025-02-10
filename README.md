@@ -49,14 +49,14 @@ Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 </details>
 
 ### [Mean Filter](./mean_filter/README.md)
-Read image with salt and pepper noise from BMP (bitmap) file, and then use mean filter to remove noise.
+Read image from BMP (bitmap) file, and then use mean filter to blur image.
 
 <details>
 <summary>More</summary>
 
 | Input                         | Output (filter size: 3) |
 | ----------------------------- | ----------------------- |
-| ![input](./mean_filter/lena256_noise.bmp) | ![output](./mean_filter/output_filtered.bmp) |
+| ![input](./mean_filter/lena256.bmp) | ![output](./mean_filter/output_filtered.bmp) |
 
 </details>
 
