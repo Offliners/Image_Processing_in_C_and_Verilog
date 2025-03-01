@@ -29,6 +29,7 @@ Since humans have different sensitivity to colors, RBG will be converted using d
 ![eye color sensitivity](./img/eye_color_sensitivity.png)
 
 Here's a colorbar we may want to convert:
+
 ![colorbar](./img/colorbar.png)
 
 If we convert it using an equally weighted:
@@ -37,6 +38,7 @@ Gray = (B + G + R) / 3
 ```
 
 we get a conversion that doesn't match our perceptions of the given colors:
+
 ![average gray](./img/average_gray.png)
 
 If we convert it using NTSC formula:
