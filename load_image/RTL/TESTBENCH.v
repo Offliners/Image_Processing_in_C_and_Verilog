@@ -79,7 +79,7 @@ LOAD_BMP LOAD_BMP1(
     .RAM_wen(RAM_wen),
     .RAM_in(RAM_in),
     .RAM_addr(RAM_addr),
-    .done(done)
+    .load_done(done)
 );
 
 BMP_ROM BMP_ROM1(

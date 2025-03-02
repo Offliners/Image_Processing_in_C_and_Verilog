@@ -14,7 +14,7 @@ module LOAD_BMP(
     RAM_wen,
     RAM_in,
     RAM_addr,
-    done
+    load_done
 );
 
 input clk;
@@ -27,7 +27,7 @@ output reg [`ADDR_WIDTH-1:0] ROM_addr;
 output reg RAM_ren, RAM_wen;
 output reg [`BYTE_WIDTH-1:0] RAM_in;
 output reg [`ADDR_WIDTH-1:0] RAM_addr;
-output reg done;
+output reg load_done;
 
 integer i;
 reg [1:0] state, next_state;
@@ -54,7 +54,7 @@ always @(*) begin
         READ: 
             next_state = WRITE;
         WRITE:
-            next_state = done ? IDLE : READ;
+            next_state = load_done ? IDLE : READ;
     endcase
 end
 
@@ -111,7 +111,7 @@ end
 
 always @(*) begin
     rom_start = (ROM_addr > 0 && ROM_addr != `INIT_ADDR) ? 1 : 0;
-    done = (RAM_addr > `BMP_TOTAL_SIZE && RAM_addr != `INIT_ADDR) ? 1 : 0;
+    load_done = (RAM_addr > `BMP_TOTAL_SIZE && RAM_addr != `INIT_ADDR) ? 1 : 0;
 end
 
 endmodule
