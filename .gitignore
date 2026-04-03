@@ -3,9 +3,17 @@
 *.txt
 *.out
 
-// load_image
-load_image/C/*.bmp
-load_image/RTL/*.bmp
+// load_bmp_image
+load_bmp_image/C/*.bmp
+load_bmp_image/RTL/*.bmp
+
+// raw_to_bgr
+raw_to_bgr/C/*.bmp
+raw_to_bgr/RTL/*.bmp
+
+// raw_to_gray
+raw_to_gray/C/*.bmp
+raw_to_gray/RTL/*.bmp
 
 // bgr_to_gray
 bgr_to_gray/C/*.bmp

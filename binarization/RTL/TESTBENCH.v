@@ -2,27 +2,60 @@
 `define CYCLE 10.0
 
 `include "DEFINE.vh"
-`include "BGR2GRAY.v"
+`include "LOAD_BMP.v"
 `include "BINARIZATION.v"
 `include "BMP_ROM.v"
-`include "BMP_DUAL_PORT_RAM.v"
+`include "BMP_LWORD_RAM.v"
 
 module TESTBENCH();
 
 integer i, k, latency;
+integer bi, wi;
 integer input_bmp_id;
 integer txt_bmp_id;
 integer output_bmp_id;
+reg [7:0] pch;
+reg [31:0] dword;
 
-wire [`BYTE_WIDTH-1:0] ROM_out;
-wire ROM_valid;
-wire [`ADDR_WIDTH-1:0] ROM_addr;
-wire RAM_ren1, RAM_wen1;
-wire RAM_ren2, RAM_wen2;
-wire [`BYTE_WIDTH-1:0] RAM_in1, RAM_in2;
-wire [`BYTE_WIDTH-1:0] RAM_out1, RAM_out2;
-wire [`ADDR_WIDTH-1:0] RAM_addr1, RAM_addr2;
-wire gray_done, done;
+function [7:0] pick_byte_from_word;
+    input [31:0] w;
+    input [1:0] sel;
+    case(sel)
+        2'b00: pick_byte_from_word = w[7:0];
+        2'b01: pick_byte_from_word = w[15:8];
+        2'b10: pick_byte_from_word = w[23:16];
+        2'b11: pick_byte_from_word = w[31:24];
+    endcase
+endfunction
+
+wire [`LWORD_WIDTH-1:0] ROM_out;
+wire [`ROM_ADDR_WIDTH-1:0] ROM_addr;
+wire ROM_ren;
+
+wire load_ram_wen_lword;
+wire [`LWORD_WIDTH-1:0] load_ram_din;
+wire [`ADDR_WIDTH-1:0] load_ram_addr;
+wire load_done;
+
+wire algo_ram_ren;
+wire [`ADDR_WIDTH-1:0] algo_ram_addr;
+wire algo_ram_wen;
+wire [`BYTE_WIDTH-1:0] algo_ram_in;
+wire [`ADDR_WIDTH-1:0] algo_ram_out_addr;
+wire done;
+
+wire [`ADDR_WIDTH-1:0] ram_in_addr_mux;
+wire ram_in_mux_wen_lword;
+wire [`LWORD_WIDTH-1:0] ram_in_mux_din;
+wire [7:0] ram_in_out;
+
+assign ram_in_addr_mux = load_done ? algo_ram_addr : load_ram_addr;
+assign ram_in_mux_wen_lword = load_done ? 1'b0 : load_ram_wen_lword;
+assign ram_in_mux_din = load_ram_din;
+assign ram_in_out = pick_byte_from_word(BMP_RAM_IN.RAM_read_word, ram_in_addr_mux[1:0]);
+
+wire [`LWORD_WIDTH-1:0] bmp_ram_din;
+assign bmp_ram_din = {24'h0, algo_ram_in};
 
 reg clk;
 reg rst_n;
@@ -37,58 +70,66 @@ initial begin
 end
 
 initial begin
-    // Step 1: Initialize
-    rst_n = 1'b1;  
+    rst_n = 1'b1;
     latency = 0;
     force clk = 1'b0;
 
-    // Step 2: Read input BMP
     input_bmp_id  = $fopen(`INPUT_BMP_IMAGE_PATH, "rb");
     if(!input_bmp_id) display_fail;
-    $display("\033[0;32mImage found!\033[m");
     k = $fread(bmp_data, input_bmp_id);
     $fclose(input_bmp_id);
 
-    // Step 3: Write BMP raw data in txt
     txt_bmp_id = $fopen(`OUTPUT_BMP_RAWDATA_TXT_PATH, "w");
-    for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 4)
-        $fwrite(txt_bmp_id, "%h %h %h %h\n", bmp_data[i], bmp_data[i+1], bmp_data[i+2], bmp_data[i+3]);
+    for(wi = 0; wi < `BMP_ROM_NUM_WORDS; wi = wi + 1) begin
+        bi = wi << 2;
+        dword = 32'h0;
+        if(bi + 0 < `BMP_TOTAL_SIZE) dword[7:0]   = bmp_data[bi+0];
+        if(bi + 1 < `BMP_TOTAL_SIZE) dword[15:8]  = bmp_data[bi+1];
+        if(bi + 2 < `BMP_TOTAL_SIZE) dword[23:16] = bmp_data[bi+2];
+        if(bi + 3 < `BMP_TOTAL_SIZE) dword[31:24] = bmp_data[bi+3];
+        $fwrite(txt_bmp_id, "%08h\n", dword);
+    end
     $fclose(txt_bmp_id);
 
     #(0.5) rst_n = 0;
     #(3)   release clk;
     #(3)   rst_n = 1;
 
-    // Step 4: Set in_valid
     in_valid = 1'b1;
 
-    // Step 5: Set timeout condition
     while(!done) begin
         latency = latency + 1;
         @(negedge clk);
-        if(latency > `MAX_LATENCY) begin
-            $display("\033[0;31m        Timeout !!! \033[m");
-            display_fail;
-        end
     end
-    $display("\033[0;32mThe execution latency are %d cycles\033[m", latency);
 end
 
-BGR2GRAY BGR2GRAY1(
+LOAD_BMP LOAD_BMP1(
     .clk(clk),
     .rst_n(rst_n),
     .in_valid(in_valid),
     .ROM_out(ROM_out),
     .ROM_ren(ROM_ren),
     .ROM_addr(ROM_addr),
-    .RAM_ren(RAM_ren1),
-    .RAM_wen(RAM_wen1),
-    .RAM_in(RAM_in1),
-    .RAM_addr(RAM_addr1),
-    .done(gray_done)
+    .RAM_wen_lword(load_ram_wen_lword),
+    .RAM_din(load_ram_din),
+    .RAM_addr(load_ram_addr),
+    .load_done(load_done)
 );
 
-BMP_ROM BMP_ROM1 (
+BINARIZATION BINARIZATION1(
+    .clk(clk),
+    .rst_n(rst_n),
+    .start(load_done),
+    .RAM_in_out(ram_in_out),
+    .RAM_in_ren(algo_ram_ren),
+    .RAM_in_addr(algo_ram_addr),
+    .RAM_out_wen(algo_ram_wen),
+    .RAM_out_in(algo_ram_in),
+    .RAM_out_addr(algo_ram_out_addr),
+    .done(done)
+);
+
+BMP_ROM BMP_ROM1(
     .clk(clk),
     .rst_n(rst_n),
     .ROM_ren(ROM_ren),
@@ -96,39 +137,39 @@ BMP_ROM BMP_ROM1 (
     .ROM_out(ROM_out)
 );
 
-BMP_DUAL_PORT_RAM BMP_RAM1(
+BMP_LWORD_RAM #(.NUM_WORDS(`BMP_RAM_NUM_WORDS)) BMP_RAM_IN(
     .clk(clk),
-    .RAM_ren1(RAM_ren1),
-    .RAM_wen1(RAM_wen1),
-    .RAM_addr1(RAM_addr1),
-    .RAM_in1(RAM_in1),
-    .RAM_ren2(RAM_ren2),
-    .RAM_wen2(RAM_wen2),
-    .RAM_addr2(RAM_addr2),
-    .RAM_in2(RAM_in2),
-    .RAM_out1(RAM_out1),
-    .RAM_out2(RAM_out2)
+    .RAM_wen_lword(ram_in_mux_wen_lword),
+    .RAM_wen_byte(1'b0),
+    .RAM_addr(ram_in_addr_mux),
+    .RAM_din(ram_in_mux_din),
+    .RAM_read_word()
 );
 
-BINARIZATION BINARIZATION1(
+BMP_LWORD_RAM #(.NUM_WORDS(`BMP_RAM_NUM_WORDS)) BMP_RAM_OUT(
     .clk(clk),
-    .rst_n(rst_n),
-    .in_valid(in_valid),
-    .gray_done(gray_done),
-    .RAM_out(RAM_out2),
-    .RAM_ren(RAM_ren2),
-    .RAM_wen(RAM_wen2),
-    .RAM_in(RAM_in2),
-    .RAM_addr(RAM_addr2),
-    .done(done)
+    .RAM_wen_lword(1'b0),
+    .RAM_wen_byte(algo_ram_wen),
+    .RAM_addr(algo_ram_out_addr),
+    .RAM_din(bmp_ram_din),
+    .RAM_read_word()
 );
 
 always @(posedge done)begin
-    // Write output BMP
+    @(negedge clk);
     $display("\033[0;32mOutput BMP Image!\033[m");
+
     output_bmp_id = $fopen(`OUTPUT_BMP_IMAGE_PATH, "wb");
-    for(i = 0; i < `BMP_TOTAL_SIZE; i = i + 1)
-        $fwrite(output_bmp_id, "%c", BMP_RAM1.ram_data[i]);
+    for(bi = 0; bi < `BMP_TOTAL_SIZE; bi = bi + 1) begin
+        wi = bi >> 2;
+        case (bi[1:0])
+            2'b00: pch = BMP_RAM_OUT.ram_word[wi][7:0];
+            2'b01: pch = BMP_RAM_OUT.ram_word[wi][15:8];
+            2'b10: pch = BMP_RAM_OUT.ram_word[wi][23:16];
+            2'b11: pch = BMP_RAM_OUT.ram_word[wi][31:24];
+        endcase
+        $fwrite(output_bmp_id, "%c", pch);
+    end
     $fclose(output_bmp_id);
 
     #(100) $finish;

@@ -1,0 +1,91 @@
+#include <stdlib.h>
+#include "common.h"
+#include "bmp_type.h"
+
+static BYTE calc_gray(BYTE blue, BYTE green, BYTE red)
+{
+    return (BYTE)((blue * 30 + green * 150 + red * 76) >> 8);
+}
+
+static BYTE *create_gray_buffer(const BMPImage *src_img)
+{
+    if(!src_img)
+        return NULL;
+
+    LWORD width = src_img->header.stBMPInfoHeader.u32ImageWidth;
+    LWORD height = src_img->header.stBMPInfoHeader.u32ImageHeight;
+    LWORD row_size = get_image_row_size_bytes(&src_img->header);
+
+    BYTE *gray = (BYTE*)malloc(width * height);
+    if(!gray)
+        return NULL;
+
+    for(LWORD y = 0; y < height; y++)
+    {
+        for(LWORD x = 0; x < width; x++)
+        {
+            LWORD idx = y * row_size + x * 3;
+            gray[y * width + x] = calc_gray(src_img->p08Data[idx],
+                                            src_img->p08Data[idx + 1],
+                                            src_img->p08Data[idx + 2]);
+        }
+    }
+
+    return gray;
+}
+
+BMPImage *gaussian_blur(BMPImage *src_img)
+{
+    if(!src_img)
+        return NULL;
+
+    LWORD width = src_img->header.stBMPInfoHeader.u32ImageWidth;
+    LWORD height = src_img->header.stBMPInfoHeader.u32ImageHeight;
+    LWORD row_size = get_image_row_size_bytes(&src_img->header);
+
+    BYTE *gray = create_gray_buffer(src_img);
+    if(!gray)
+        return NULL;
+
+    BMPImage *out_img = copy_bmp(src_img);
+    if(!out_img)
+    {
+        free(gray);
+        return NULL;
+    }
+
+    const int kernel[3][3] = {
+        {1, 2, 1},
+        {2, 4, 2},
+        {1, 2, 1}
+    };
+
+    for(LWORD y = 0; y < height; y++)
+    {
+        for(LWORD x = 0; x < width; x++)
+        {
+            BYTE out_val = gray[y * width + x];
+            if(y > 0 && y + 1 < height && x > 0 && x + 1 < width)
+            {
+                int sum = 0;
+                for(int ky = -1; ky <= 1; ky++)
+                {
+                    for(int kx = -1; kx <= 1; kx++)
+                    {
+                        BYTE g = gray[(y + ky) * width + (x + kx)];
+                        sum += g * kernel[ky + 1][kx + 1];
+                    }
+                }
+                out_val = (BYTE)(sum / 16);
+            }
+
+            LWORD out_idx = y * row_size + x * 3;
+            out_img->p08Data[out_idx] = out_val;
+            out_img->p08Data[out_idx + 1] = out_val;
+            out_img->p08Data[out_idx + 2] = out_val;
+        }
+    }
+
+    free(gray);
+    return out_img;
+}

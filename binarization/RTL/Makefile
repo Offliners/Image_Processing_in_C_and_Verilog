@@ -22,7 +22,7 @@ check: $(DESIGN)
 	@echo "Check $(DESIGN)"
 	@$(COMPILER) $(COFLAGS) $(COUTPUT) $(DESIGN)
 
-simulate: $(COUTPUT) $(TESTBENCH)
+simulate: $(TESTBENCH)
 	@echo "Simulate $(COUTPUT)"
 	@$(COMPILER) $(COFLAGS) $(COUTPUT) $(TESTBENCH)
 	@$(SIMULATOR) $(SFLAGS) $(COUTPUT)

@@ -49,7 +49,8 @@ BYTE check_img_exist(char *filename)
 
     if(!fp)
         return FUNC_FAIL;
-    
+
+    fclose(fp);
     return FUNC_SUC;
 }
 
@@ -57,7 +58,11 @@ BMPImage *read_image(const char *filename)
 {
     LWORD error_record = 0;
     FILE *fp = fopen(filename, "rb");
+    if(!fp)
+        return NULL;
+
     BMPImage *img = read_bmp(fp, &error_record);
+    fclose(fp);
 
     if(error_record || !img)
         return NULL;

@@ -1,24 +1,21 @@
 `include "DEFINE.vh"
 
 module BMP_ROM (
-    // Input signals
     clk,
     rst_n,
     ROM_ren,
     ROM_addr,
-
-    // Output signals
     ROM_out
 );
 
 input clk;
 input rst_n;
 input ROM_ren;
-input [`ADDR_WIDTH-1:0] ROM_addr;
+input [`ROM_ADDR_WIDTH-1:0] ROM_addr;
 
-output reg [`BYTE_WIDTH-1:0] ROM_out;
+output reg [`LWORD_WIDTH-1:0] ROM_out;
 
-reg [`BYTE_WIDTH-1:0] rom_data [0:`BMP_TOTAL_SIZE + 1];
+reg [`LWORD_WIDTH-1:0] rom_data [0:`BMP_ROM_LAST_IX];
 
 initial begin
     @(negedge rst_n) $readmemh(`OUTPUT_BMP_RAWDATA_TXT_PATH, rom_data);

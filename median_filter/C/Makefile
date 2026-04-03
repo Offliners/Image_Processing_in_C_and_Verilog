@@ -4,7 +4,7 @@ CUR_DIR = ./
 OUTPUT_IMG = ./output.bmp
 
 all:
-	gcc ${CUR_DIR}*.c -o median_filter.o -I${CUR_DIR}
+	gcc ${CUR_DIR}*.c ../../common/C/bmp_func.c -o median_filter.o -I${CUR_DIR} -I../../common/C
 
 clean:
 	rm -rf *.o ${OUTPUT_IMG}
