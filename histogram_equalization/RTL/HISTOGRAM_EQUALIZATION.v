@@ -58,17 +58,6 @@ integer cdf_min;
 integer mapped;
 reg [7:0] g;
 
-function [7:0] to_gray;
-    input [7:0] b;
-    input [7:0] g_in;
-    input [7:0] r;
-    integer s;
-    begin
-        s = b * 30 + g_in * 150 + r * 76;
-        to_gray = s >> 8;
-    end
-endfunction
-
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         state <= IDLE;
@@ -108,10 +97,11 @@ always @(posedge clk or negedge rst_n) begin
                     hist[i] = 0;
                     cdf[i] = 0;
                 end
+                /* Grayscale 24-bit BMP: B=G=R per pixel; use B channel */
                 for(yi = 0; yi < `BMP_HEIGHT; yi = yi + 1) begin
                     for(xi = 0; xi < `BMP_WIDTH; xi = xi + 1) begin
                         base_idx = (yi * `BMP_WIDTH + xi) * 3;
-                        g = to_gray(img_data[base_idx], img_data[base_idx + 1], img_data[base_idx + 2]);
+                        g = img_data[base_idx];
                         hist[g] = hist[g] + 1;
                     end
                 end
@@ -128,7 +118,7 @@ always @(posedge clk or negedge rst_n) begin
                 for(yi = 0; yi < `BMP_HEIGHT; yi = yi + 1) begin
                     for(xi = 0; xi < `BMP_WIDTH; xi = xi + 1) begin
                         base_idx = (yi * `BMP_WIDTH + xi) * 3;
-                        g = to_gray(img_data[base_idx], img_data[base_idx + 1], img_data[base_idx + 2]);
+                        g = img_data[base_idx];
                         if(total_pixels != cdf_min) begin
                             mapped = (cdf[g] - cdf_min) * 255;
                             mapped = mapped / (total_pixels - cdf_min);

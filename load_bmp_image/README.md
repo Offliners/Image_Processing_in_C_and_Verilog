@@ -18,10 +18,12 @@ $ make check
 $ make simulate
 $ make wave
 
-# Confirm whether the two BMP images are the same
+# Compare C vs RTL (writes under C/ and RTL/)
 $ cd ./load_bmp_image
-$ python3 compare.py 
+$ python3 compare.py
 ```
+
+*C writes `C/output.bmp`; RTL writes `RTL/output.bmp`. `compare.py` uses those paths by default.*
 
 ## BMP File Format
 ![BMP format](./img/bitmap_format.png)

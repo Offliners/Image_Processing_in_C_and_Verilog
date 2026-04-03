@@ -6,11 +6,6 @@
 #define HIST_WIDTH  256
 #define HIST_HEIGHT 256
 
-static BYTE calc_gray(BYTE blue, BYTE green, BYTE red)
-{
-    return (BYTE)((blue * 30 + green * 150 + red * 76) >> 8);
-}
-
 static BMPImage *create_bmp(LWORD width, LWORD height)
 {
     if(width == 0 || height == 0)
@@ -67,7 +62,8 @@ BMPImage *histogram_bmp(BMPImage *src_img)
         for(LWORD x = 0; x < width; x++)
         {
             LWORD idx = y * row_size + x * 3;
-            BYTE gray = calc_gray(src_img->p08Data[idx], src_img->p08Data[idx + 1], src_img->p08Data[idx + 2]);
+            /* Grayscale 24-bit BMP (B=G=R): use B channel */
+            BYTE gray = src_img->p08Data[idx];
             hist[gray]++;
         }
     }

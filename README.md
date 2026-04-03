@@ -91,7 +91,7 @@ Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 
 | Input                   | Output (flipped)             |
 | ----------------------- | ---------------------------- |
-| ![input](./lena256.bmp) | ![output](./image_vertical_flip/output.bmp) |
+| ![input](./image_vertical_flip/lena256.bmp) | ![output](./image_vertical_flip/output.bmp) |
 
 </details>
 
@@ -103,7 +103,7 @@ Apply 3x3 dilation on a binarized grayscale image.
 
 | Input                   | Output (3×3 dilation)        |
 | ----------------------- | ---------------------------- |
-| ![input](./lena256.bmp) | ![output](./image_dilation/output.bmp) |
+| ![input](./image_dilation/lena256.bmp) | ![output](./image_dilation/output.bmp) |
 
 </details>
 
@@ -115,7 +115,7 @@ Apply 3x3 erosion on a binarized grayscale image.
 
 | Input                   | Output (3×3 erosion)         |
 | ----------------------- | ---------------------------- |
-| ![input](./lena256.bmp) | ![output](./image_erosion/output.bmp) |
+| ![input](./image_erosion/lena256.bmp) | ![output](./image_erosion/output.bmp) |
 
 </details>
 
@@ -127,31 +127,31 @@ Label connected components (4-connectivity) on a binarized image.
 
 | Input                   | Output (4-connectivity)      |
 | ----------------------- | ---------------------------- |
-| ![input](./lena256.bmp) | ![output](./connected_components/output.bmp) |
+| ![input](./connected_components/lena256.bmp) | ![output](./connected_components/output.bmp) |
 
 </details>
 
 ### [Image Histogram](./image_histogram/README.md)
-Compute grayscale histogram and render it as a BMP.
+Compute grayscale histogram from a **grayscale** 24-bit BMP (`lena256.bmp`, B=G=R) and render it as a BMP.
 
 <details>
 <summary>More</summary>
 
 | Input                   | Output (histogram BMP)       |
 | ----------------------- | ---------------------------- |
-| ![input](./lena256.bmp) | ![output](./image_histogram/output.bmp) |
+| ![input](./image_histogram/lena256.bmp) | ![output](./image_histogram/output.bmp) |
 
 </details>
 
 ### [Histogram Equalization](./histogram_equalization/README.md)
-Equalize grayscale histogram to enhance contrast.
+Equalize grayscale histogram on a **grayscale** 24-bit BMP (`lena256.bmp`, B=G=R) to enhance contrast.
 
 <details>
 <summary>More</summary>
 
 | Input                   | Output                       |
 | ----------------------- | ---------------------------- |
-| ![input](./lena256.bmp) | ![output](./histogram_equalization/output.bmp) |
+| ![input](./histogram_equalization/lena256.bmp) | ![output](./histogram_equalization/output.bmp) |
 
 </details>
 
@@ -180,14 +180,14 @@ Read image with salt and pepper noise from BMP (bitmap) file, and then use media
 </details>
 
 ### [Gaussian Blur Filter](./gaussian_blur_filter/README.md)
-Apply a 3x3 Gaussian blur on a grayscale image.
+Apply a 3×3 Gaussian blur **separately on B, G, and R**; output is a **color** 24-bit BMP.
 
 <details>
 <summary>More</summary>
 
 | Input                   | Output (3×3 Gaussian)        |
 | ----------------------- | ---------------------------- |
-| ![input](./lena256.bmp) | ![output](./gaussian_blur_filter/output.bmp) |
+| ![input](./gaussian_blur_filter/lena256.bmp) | ![output](./gaussian_blur_filter/output.bmp) |
 
 </details>
 
@@ -199,7 +199,7 @@ Detect edges with Sobel operator on a grayscale image.
 
 | Input                   | Output                       |
 | ----------------------- | ---------------------------- |
-| ![input](./lena256.bmp) | ![output](./sobel_filter/output.bmp) |
+| ![input](./sobel_filter/lena256.bmp) | ![output](./sobel_filter/output.bmp) |
 
 </details>
 
@@ -211,7 +211,7 @@ Detect edges with 3x3 Laplacian operator on a grayscale image.
 
 | Input                   | Output (3×3 Laplacian)       |
 | ----------------------- | ---------------------------- |
-| ![input](./lena256.bmp) | ![output](./laplacian_filter/output.bmp) |
+| ![input](./laplacian_filter/lena256.bmp) | ![output](./laplacian_filter/output.bmp) |
 
 </details>
 

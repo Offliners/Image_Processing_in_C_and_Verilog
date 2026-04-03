@@ -1,9 +1,9 @@
 # BGR to Gray
 Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 
-| Input                   | Output                       |
-| ----------------------- | ---------------------------- |
-| ![input](./lena256.bmp) | ![output](./output_gray.bmp) |
+| Input                   | Output                  |
+| ----------------------- | ----------------------- |
+| ![input](./lena256.bmp) | ![output](./output.bmp) |
 
 ## Usage
 ```shell
@@ -18,10 +18,12 @@ $ make check
 $ make simulate
 $ make wave
 
-# Confirm whether the two BMP images are the same
+# Compare C vs RTL
 $ cd ./bgr_to_gray
 $ python3 compare.py
 ```
+
+*C writes `C/output.bmp`; RTL writes `RTL/output.bmp`.*
 
 ## BGR to Grayscale Conversion
 Since humans have different sensitivity to colors, RBG will be converted using different weights.

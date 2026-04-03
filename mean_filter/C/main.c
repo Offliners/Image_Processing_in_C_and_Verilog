@@ -9,7 +9,7 @@ BYTE write_image(const char *filename, BMPImage *img);
 
 int main(int argc, char *argv[])
 {
-    if(argc != 3)
+    if(argc != 2)
     {
         printf(RED_COLOR "Error arguments!\n" ENDL_COLOR);
         return FUNC_FAIL;
@@ -23,14 +23,7 @@ int main(int argc, char *argv[])
     else
         printf(GREEN_COLOR "Image found!\n\n" ENDL_COLOR);
 
-    LWORD mask_size = atoi(argv[2]);
-    if(mask_size % 2 == 0)
-    {
-        printf(RED_COLOR "The size of mean filter cannot be even!\n" ENDL_COLOR);
-        return FUNC_FAIL;
-    }
-    else
-        printf(GREEN_COLOR "The size of mean filter is %d\n\n" ENDL_COLOR, mask_size);
+    LWORD mask_size = 3;
 
     BYTE u08Ret = FUNC_SUC;
     BMPImage *img = read_image(argv[1]);

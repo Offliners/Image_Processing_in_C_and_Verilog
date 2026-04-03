@@ -6,7 +6,7 @@
 `define LWORD_WIDTH 32
 
 // BMP file path
-`define INPUT_BMP_IMAGE_PATH         "../../lena256.bmp"
+`define INPUT_BMP_IMAGE_PATH         "../lena256.bmp"
 `define OUTPUT_BMP_RAWDATA_TXT_PATH  "./temp_bmp.txt"
 `define OUTPUT_BMP_IMAGE_PATH        "./output.bmp"
 

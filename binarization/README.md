@@ -1,9 +1,9 @@
 # Binarization
 Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale. Finally, set pixels to white or black determined by threshold.
 
-| Input                   | Output (threshold: 8'd127)           |
-| ----------------------- | ------------------------------------ |
-| ![input](./lena256.bmp) | ![output](./output_binarization.bmp) |
+| Input                   | Output (threshold: 8'd127) |
+| ----------------------- | -------------------------- |
+| ![input](./lena256.bmp) | ![output](./output.bmp)    |
 
 ## Usage
 ```shell
@@ -18,7 +18,7 @@ $ make check
 $ make simulate
 $ make wave
 
-# Confirm whether the two BMP images are the same
+# Compare C vs RTL
 $ cd ./binarization
 $ python3 compare.py
 ```

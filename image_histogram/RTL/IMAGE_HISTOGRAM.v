@@ -54,17 +54,6 @@ integer idx;
 integer max_count;
 integer bar_height;
 
-function [7:0] to_gray;
-    input [7:0] b;
-    input [7:0] g;
-    input [7:0] r;
-    integer s;
-    begin
-        s = b * 30 + g * 150 + r * 76;
-        to_gray = s >> 8;
-    end
-endfunction
-
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         state <= IDLE;
@@ -102,11 +91,11 @@ always @(posedge clk or negedge rst_n) begin
                 for(i = 0; i < 256; i = i + 1)
                     hist[i] = 0;
 
+                /* Grayscale 24-bit BMP: B=G=R per pixel; use B channel */
                 for(y = 0; y < `BMP_HEIGHT; y = y + 1) begin
                     for(x = 0; x < `BMP_WIDTH; x = x + 1) begin
                         idx = (y * `BMP_WIDTH + x) * 3;
-                        hist[to_gray(img_data[idx], img_data[idx + 1], img_data[idx + 2])] =
-                            hist[to_gray(img_data[idx], img_data[idx + 1], img_data[idx + 2])] + 1;
+                        hist[img_data[idx]] = hist[img_data[idx]] + 1;
                     end
                 end
 

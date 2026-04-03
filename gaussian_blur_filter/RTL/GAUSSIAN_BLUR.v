@@ -51,20 +51,8 @@ integer xi, yi;
 integer base_idx;
 integer dx, dy;
 integer nb_idx;
-integer sum;
+integer sum_b, sum_g, sum_r;
 integer weight;
-integer gray;
-
-function [7:0] to_gray;
-    input [7:0] b;
-    input [7:0] g;
-    input [7:0] r;
-    integer s;
-    begin
-        s = b * 30 + g * 150 + r * 76;
-        to_gray = s >> 8;
-    end
-endfunction
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
@@ -104,29 +92,30 @@ always @(posedge clk or negedge rst_n) begin
                     for(xi = 0; xi < `BMP_WIDTH; xi = xi + 1) begin
                         base_idx = (yi * `BMP_WIDTH + xi) * 3;
                         if(yi == 0 || xi == 0 || yi == `BMP_HEIGHT - 1 || xi == `BMP_WIDTH - 1) begin
-                            gray = to_gray(img_data[base_idx], img_data[base_idx + 1], img_data[base_idx + 2]);
-                            out_data[base_idx] = gray[7:0];
-                            out_data[base_idx + 1] = gray[7:0];
-                            out_data[base_idx + 2] = gray[7:0];
+                            out_data[base_idx] = img_data[base_idx];
+                            out_data[base_idx + 1] = img_data[base_idx + 1];
+                            out_data[base_idx + 2] = img_data[base_idx + 2];
                         end else begin
-                            sum = 0;
+                            sum_b = 0;
+                            sum_g = 0;
+                            sum_r = 0;
                             for(dy = -1; dy <= 1; dy = dy + 1) begin
                                 for(dx = -1; dx <= 1; dx = dx + 1) begin
                                     nb_idx = ((yi + dy) * `BMP_WIDTH + (xi + dx)) * 3;
-                                    gray = to_gray(img_data[nb_idx], img_data[nb_idx + 1], img_data[nb_idx + 2]);
                                     if(dx == 0 && dy == 0)
                                         weight = 4;
                                     else if(dx == 0 || dy == 0)
                                         weight = 2;
                                     else
                                         weight = 1;
-                                    sum = sum + gray * weight;
+                                    sum_b = sum_b + img_data[nb_idx] * weight;
+                                    sum_g = sum_g + img_data[nb_idx + 1] * weight;
+                                    sum_r = sum_r + img_data[nb_idx + 2] * weight;
                                 end
                             end
-                            gray = sum / 16;
-                            out_data[base_idx] = gray[7:0];
-                            out_data[base_idx + 1] = gray[7:0];
-                            out_data[base_idx + 2] = gray[7:0];
+                            out_data[base_idx] = sum_b / 16;
+                            out_data[base_idx + 1] = sum_g / 16;
+                            out_data[base_idx + 2] = sum_r / 16;
                         end
                     end
                 end

@@ -2,11 +2,7 @@
 #include "common.h"
 #include "bmp_type.h"
 
-static BYTE calc_gray(BYTE blue, BYTE green, BYTE red)
-{
-    return (BYTE)((blue * 30 + green * 150 + red * 76) >> 8);
-}
-
+/* Input: 24-bit BMP with grayscale pixels (B ≈ G ≈ R), e.g. lena256.bmp */
 static BYTE *create_gray_buffer(const BMPImage *src_img)
 {
     if(!src_img)
@@ -25,10 +21,7 @@ static BYTE *create_gray_buffer(const BMPImage *src_img)
         for(LWORD x = 0; x < width; x++)
         {
             LWORD idx = y * row_size + x * 3;
-            BYTE blue = src_img->p08Data[idx];
-            BYTE green = src_img->p08Data[idx + 1];
-            BYTE red = src_img->p08Data[idx + 2];
-            gray[y * width + x] = calc_gray(blue, green, red);
+            gray[y * width + x] = src_img->p08Data[idx];
         }
     }
 
