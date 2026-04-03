@@ -15,6 +15,8 @@ $ ./laplacian_filter.o ../lena256.bmp
 # RTL
 $ cd ./laplacian_filter/RTL
 $ make simulate
-```
 
-*This folder has no `compare.py`; compare C and RTL outputs manually if needed.*
+# Compare C vs RTL
+$ cd ./laplacian_filter
+$ python3 compare.py
+```
