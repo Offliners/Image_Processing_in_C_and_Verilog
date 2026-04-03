@@ -3,6 +3,8 @@
 *.txt
 *.out
 
+.DS_Store
+
 # load_bmp_image
 load_bmp_image/C/*.bmp
 load_bmp_image/RTL/*.bmp
