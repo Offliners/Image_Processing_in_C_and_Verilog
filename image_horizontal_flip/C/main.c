@@ -3,8 +3,6 @@
 #include "common.h"
 #include "bmp_type.h"
 
-#define MEDIAN_FILTER_MASK_SIZE 3
-
 BYTE check_img_exist(char *filename);
 BMPImage *read_image(const char *filename);
 BYTE write_image(const char *filename, BMPImage *img);
@@ -27,26 +25,26 @@ int main(int argc, char *argv[])
 
     BYTE u08Ret = FUNC_SUC;
     BMPImage *img = read_image(argv[1]);
+    if(!img)
+        return FUNC_FAIL;
 
     printf(YELLOW_COLOR "Input Image\n" ENDL_COLOR);
     show_bmp_info(img);
 
-    BMPImage *filtered_img = MedianFilter(img, MEDIAN_FILTER_MASK_SIZE);
+    bmp_flip_left_right_inplace(img);
 
-    printf(YELLOW_COLOR "Output Image\n" ENDL_COLOR);
-    show_bmp_info(filtered_img);
+    printf(YELLOW_COLOR "Output Image (horizontal flip)\n" ENDL_COLOR);
+    show_bmp_info(img);
 
-    u08Ret |= write_image("output.bmp", filtered_img);
-
+    u08Ret |= write_image("output.bmp", img);
     free_bmp_image(img);
-    free_bmp_image(filtered_img);
 
     return u08Ret;
 }
 
 BYTE check_img_exist(char *filename)
 {
-    FILE *fp = fopen(filename, "r");
+    FILE *fp = fopen(filename, "rb");
 
     if(!fp)
         return FUNC_FAIL;
@@ -67,7 +65,7 @@ BMPImage *read_image(const char *filename)
 
     if(error_record || !img)
         return NULL;
-    
+
     return img;
 }
 
@@ -86,7 +84,7 @@ BYTE write_image(const char *filename, BMPImage *img)
     if(!fp)
     {
         printf(RED_COLOR "This file path cannot be written BMP image!" ENDL_COLOR);
-        u08Ret|= FUNC_FAIL;
+        u08Ret |= FUNC_FAIL;
     }
     else
     {
@@ -95,7 +93,7 @@ BYTE write_image(const char *filename, BMPImage *img)
         else
             printf(GREEN_COLOR "Image has been written!\n" ENDL_COLOR);
     }
-    
+
     fclose(fp);
     return u08Ret;
 }

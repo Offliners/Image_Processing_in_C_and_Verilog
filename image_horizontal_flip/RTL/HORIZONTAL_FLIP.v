@@ -1,13 +1,11 @@
 `include "DEFINE.vh"
 
-module LAPLACIAN_FILTER(
-    // Input signals
+/* Horizontal flip: mirror left<->right per row; same as bmp_flip_left_right_inplace. */
+module HORIZONTAL_FLIP(
     clk,
     rst_n,
     start,
     RAM_in_out,
-
-    // Output signals
     RAM_in_ren,
     RAM_in_addr,
     RAM_out_wen,
@@ -46,14 +44,10 @@ reg [31:0] write_idx;
 reg [`BYTE_WIDTH-1:0] header_data [0:`BMP_HEADER_SIZE-1];
 reg [`BYTE_WIDTH-1:0] img_data [0:PIXEL_DATA_SIZE-1];
 reg [`BYTE_WIDTH-1:0] out_data [0:PIXEL_DATA_SIZE-1];
-reg [`BYTE_WIDTH-1:0] gray_data [0:`BMP_PIXEL_COUNT-1];
 
-integer xi, yi;
-integer base_idx;
-integer sum;
-integer pidx;
+integer yi, xi;
+integer src_base, dst_x, dst_base;
 
-/* Grayscale input (B=G=R) after BGR2GRAY */
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         state <= IDLE;
@@ -90,30 +84,12 @@ always @(posedge clk or negedge rst_n) begin
             PROCESS: begin
                 for(yi = 0; yi < `BMP_HEIGHT; yi = yi + 1) begin
                     for(xi = 0; xi < `BMP_WIDTH; xi = xi + 1) begin
-                        pidx = (yi * `BMP_WIDTH + xi) * 3;
-                        gray_data[yi * `BMP_WIDTH + xi] = img_data[pidx];
-                    end
-                end
-                for(yi = 0; yi < `BMP_HEIGHT; yi = yi + 1) begin
-                    for(xi = 0; xi < `BMP_WIDTH; xi = xi + 1) begin
-                        base_idx = (yi * `BMP_WIDTH + xi) * 3;
-                        if(yi == 0 || xi == 0 || yi == `BMP_HEIGHT - 1 || xi == `BMP_WIDTH - 1) begin
-                            out_data[base_idx] = 8'd0;
-                            out_data[base_idx + 1] = 8'd0;
-                            out_data[base_idx + 2] = 8'd0;
-                        end else begin
-                            sum = 0;
-                            sum = sum - gray_data[(yi - 1) * `BMP_WIDTH + xi];
-                            sum = sum - gray_data[yi * `BMP_WIDTH + (xi - 1)];
-                            sum = sum + (gray_data[yi * `BMP_WIDTH + xi] << 2);
-                            sum = sum - gray_data[yi * `BMP_WIDTH + (xi + 1)];
-                            sum = sum - gray_data[(yi + 1) * `BMP_WIDTH + xi];
-                            if(sum < 0) sum = -sum;
-                            if(sum > 255) sum = 255;
-                            out_data[base_idx] = sum[7:0];
-                            out_data[base_idx + 1] = sum[7:0];
-                            out_data[base_idx + 2] = sum[7:0];
-                        end
+                        src_base = (yi * `BMP_WIDTH + xi) * 3;
+                        dst_x = `BMP_WIDTH - 1 - xi;
+                        dst_base = (yi * `BMP_WIDTH + dst_x) * 3;
+                        out_data[dst_base]     = img_data[src_base];
+                        out_data[dst_base + 1] = img_data[src_base + 1];
+                        out_data[dst_base + 2] = img_data[src_base + 2];
                     end
                 end
                 write_idx <= 0;

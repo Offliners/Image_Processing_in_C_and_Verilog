@@ -146,4 +146,7 @@ void free_bmp_image(BMPImage *img);
 /* Vertical flip: swap raster rows (top<->bottom) for 24-bit BMP pixel data; fixes RAW top-down vs DIB bottom-up. */
 void bmp_flip_top_bottom_inplace(BMPImage *img);
 
+/* Horizontal flip: mirror left<->right per row (24-bit BGR pixels). */
+void bmp_flip_left_right_inplace(BMPImage *img);
+
 #endif // _BMP_TYPE_H_

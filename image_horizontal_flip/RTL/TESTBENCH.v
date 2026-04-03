@@ -3,7 +3,7 @@
 
 `include "DEFINE.vh"
 `include "LOAD_BMP.v"
-`include "HISTOGRAM_EQUALIZATION.v"
+`include "HORIZONTAL_FLIP.v"
 `include "BMP_ROM.v"
 `include "BMP_LWORD_RAM.v"
 
@@ -77,7 +77,7 @@ always @(posedge clk) begin
 end
 
 initial begin
-    $dumpfile("HISTOGRAM_EQUALIZATION.vcd");
+    $dumpfile("HORIZONTAL_FLIP.vcd");
     $dumpvars;
 end
 
@@ -112,7 +112,9 @@ initial begin
     while(!done) begin
         latency = latency + 1;
         @(negedge clk);
+        if(latency > `MAX_LATENCY) display_fail;
     end
+    $display("\033[0;32mThe execution latency are %d cycles\033[m", latency);
 end
 
 LOAD_BMP LOAD_BMP1(
@@ -128,7 +130,7 @@ LOAD_BMP LOAD_BMP1(
     .load_done(load_done)
 );
 
-HISTOGRAM_EQUALIZATION HISTOGRAM_EQUALIZATION1(
+HORIZONTAL_FLIP HORIZONTAL_FLIP1(
     .clk(clk),
     .rst_n(rst_n),
     .start(load_done),

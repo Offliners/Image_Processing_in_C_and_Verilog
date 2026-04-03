@@ -113,15 +113,11 @@ run_one() {
   echo "OK: $dir"
 }
 
-# README Contents order. Fields: dir|exe|c_args (relative to module C/)|run_compare (1/0)
-# Note: median_filter RTL DEFINE uses ../lena256.bmp while C uses lena256_noise.bmp; compare may fail.
 ensure_median_noise() {
   local noise="$REPO_ROOT/median_filter/lena256_noise.bmp"
   local src="$REPO_ROOT/median_filter/lena256.bmp"
-  if [[ -f "$noise" ]]; then
-    return 0
-  fi
-  need_file "$src" "Put lena256.bmp in median_filter/, or create median_filter/lena256_noise.bmp yourself" || return 1
+  [[ -f "$noise" ]] && return 0
+  need_file "$src" "median_filter needs lena256.bmp to generate lena256_noise.bmp (or add the noise file yourself)" || return 1
   log "Generating median_filter/lena256_noise.bmp (add_noise.py)"
   ( cd "$REPO_ROOT/median_filter" && python3 add_noise.py -i "$src" -o ./lena256_noise.bmp )
 }
@@ -138,7 +134,7 @@ check_prereqs() {
         need_file "$REPO_ROOT/raw_to_gray/lena256_gray.raw" "required for raw_to_gray" || return 1
         ;;
       median_filter)
-        need_file "$REPO_ROOT/median_filter/lena256.bmp" "required for add_noise / this module" || return 1
+        need_file "$REPO_ROOT/median_filter/lena256.bmp" "required for add_noise / median_filter" || return 1
         ensure_median_noise || return 1
         ;;
       *)
@@ -170,16 +166,17 @@ raw_to_gray|raw_to_gray.o|../lena256_gray.raw|1
 bgr_to_gray|bgr2gray.o|../lena256.bmp|1
 binarization|binarization.o|../lena256.bmp|1
 image_vertical_flip|vertical_flip.o|../lena256.bmp|1
+image_horizontal_flip|horizontal_flip.o|../lena256.bmp|1
 image_dilation|image_dilation.o|../lena256.bmp|1
 image_erosion|image_erosion.o|../lena256.bmp|1
 connected_components|connected_components.o|../lena256.bmp|1
 image_histogram|image_histogram.o|../lena256.bmp|1
 histogram_equalization|histogram_equalization.o|../lena256.bmp|1
 mean_filter|mean_filter.o|../lena256.bmp|1
-median_filter|median_filter.o|../lena256_noise.bmp 3|1
+median_filter|median_filter.o|../lena256_noise.bmp|1
 gaussian_blur_filter|gaussian_blur.o|../lena256.bmp|1
 sobel_filter|sobel_filter.o|../lena256.bmp|1
-laplacian_filter|laplacian_filter.o|../lena256.bmp|0
+laplacian_filter|laplacian_filter.o|../lena256.bmp|1
 MODULES
 
 echo ""

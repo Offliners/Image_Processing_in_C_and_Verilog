@@ -64,6 +64,18 @@ reg [`BYTE_WIDTH-1:0] bmp_data [0:`BMP_TOTAL_SIZE-1];
 
 always #(`CYCLE/2) clk = ~clk;
 
+integer sim_cycle_cnt;
+initial sim_cycle_cnt = 0;
+always @(posedge clk) begin
+    if (!rst_n)
+        sim_cycle_cnt = 0;
+    else begin
+        sim_cycle_cnt = sim_cycle_cnt + 1;
+        if (sim_cycle_cnt % 1000 == 0)
+            $display("[TESTBENCH] %0d cycles", sim_cycle_cnt);
+    end
+end
+
 initial begin
     $dumpfile("VERTICAL_FLIP.vcd");
     $dumpvars;

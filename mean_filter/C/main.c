@@ -3,6 +3,8 @@
 #include "common.h"
 #include "bmp_type.h"
 
+#define MEAN_FILTER_MASK_SIZE 3
+
 BYTE check_img_exist(char *filename);
 BMPImage *read_image(const char *filename);
 BYTE write_image(const char *filename, BMPImage *img);
@@ -23,15 +25,13 @@ int main(int argc, char *argv[])
     else
         printf(GREEN_COLOR "Image found!\n\n" ENDL_COLOR);
 
-    LWORD mask_size = 3;
-
     BYTE u08Ret = FUNC_SUC;
     BMPImage *img = read_image(argv[1]);
 
     printf(YELLOW_COLOR "Input Image\n" ENDL_COLOR);
     show_bmp_info(img);
 
-    BMPImage *filtered_img = MeanFilter(img, mask_size);
+    BMPImage *filtered_img = MeanFilter(img, MEAN_FILTER_MASK_SIZE);
 
     printf(YELLOW_COLOR "Output Image\n" ENDL_COLOR);
     show_bmp_info(filtered_img);

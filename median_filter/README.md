@@ -1,7 +1,7 @@
 # Median Filter
 Read image with salt and pepper noise from BMP (bitmap) file, and then use median filter to remove noise.
 
-Base image in this folder is **`./lena256.bmp`**. For the noisy input used by the C program, generate **`./lena256_noise.bmp`** (see below). Program output is **`./output.bmp`** (written under `C/output.bmp` when you run from `C/`).
+Base image in this folder is **`./lena256.bmp`**. Both **C** and **RTL** read the same noisy input **`./lena256_noise.bmp`**; generate it with `add_noise.py` (below). Program output is **`./output.bmp`** (C writes `C/output.bmp`, RTL writes `RTL/output.bmp`; `compare.py` compares those).
 
 | Input                          | Output (filter size: 3)  |
 | ------------------------------ | ------------------------ |

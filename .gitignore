@@ -37,6 +37,10 @@ median_filter/RTL/*.bmp
 image_vertical_flip/C/*.bmp
 image_vertical_flip/RTL/*.bmp
 
+# image_horizontal_flip
+image_horizontal_flip/C/*.bmp
+image_horizontal_flip/RTL/*.bmp
+
 # image_dilation
 image_dilation/C/*.bmp
 image_dilation/RTL/*.bmp

@@ -263,6 +263,46 @@ void bmp_flip_top_bottom_inplace(BMPImage *img)
     free(tmp);
 }
 
+void bmp_flip_left_right_inplace(BMPImage *img)
+{
+    LWORD y, x;
+    LWORD w, h;
+    LWORD row_bytes;
+    BYTE *row;
+    BYTE *a;
+    BYTE *b;
+    BYTE tmp[3];
+
+    if(!img || !img->p08Data)
+        return;
+
+    w = img->header.stBMPInfoHeader.u32ImageWidth;
+    h = img->header.stBMPInfoHeader.u32ImageHeight;
+    if(w < 2)
+        return;
+
+    row_bytes = get_image_row_size_bytes(&img->header);
+
+    for(y = 0; y < h; y++)
+    {
+        row = img->p08Data + y * row_bytes;
+        for(x = 0; x < w / 2; x++)
+        {
+            a = row + x * 3;
+            b = row + (w - 1 - x) * 3;
+            tmp[0] = a[0];
+            tmp[1] = a[1];
+            tmp[2] = a[2];
+            a[0] = b[0];
+            a[1] = b[1];
+            a[2] = b[2];
+            b[0] = tmp[0];
+            b[1] = tmp[1];
+            b[2] = tmp[2];
+        }
+    }
+}
+
 void free_bmp_image(BMPImage *img)
 {
     if(img)

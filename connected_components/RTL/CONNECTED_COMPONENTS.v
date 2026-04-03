@@ -54,22 +54,13 @@ integer queue_y [0:`BMP_PIXEL_COUNT-1];
 
 integer i, x, y;
 integer idx;
+integer pidx;
 integer label_count;
 integer head, tail;
 integer cx, cy;
 integer value;
 
-function [7:0] to_gray;
-    input [7:0] b;
-    input [7:0] g;
-    input [7:0] r;
-    integer s;
-    begin
-        s = b * 30 + g * 150 + r * 76;
-        to_gray = s >> 8;
-    end
-endfunction
-
+/* Grayscale input (B=G=R) after BGR2GRAY */
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         state <= IDLE;
@@ -106,8 +97,8 @@ always @(posedge clk or negedge rst_n) begin
             PROCESS: begin
                 for(y = 0; y < `BMP_HEIGHT; y = y + 1) begin
                     for(x = 0; x < `BMP_WIDTH; x = x + 1) begin
-                        idx = (y * `BMP_WIDTH + x) * 3;
-                        gray_data[y * `BMP_WIDTH + x] = to_gray(img_data[idx], img_data[idx + 1], img_data[idx + 2]);
+                        pidx = (y * `BMP_WIDTH + x) * 3;
+                        gray_data[y * `BMP_WIDTH + x] = img_data[pidx];
                         binary_data[y * `BMP_WIDTH + x] = (gray_data[y * `BMP_WIDTH + x] > `BIN_THRESHOLD) ? 8'd1 : 8'd0;
                         label_data[y * `BMP_WIDTH + x] = 0;
                     end

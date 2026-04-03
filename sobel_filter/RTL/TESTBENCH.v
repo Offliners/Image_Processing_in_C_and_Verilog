@@ -3,6 +3,7 @@
 
 `include "DEFINE.vh"
 `include "LOAD_BMP.v"
+`include "BGR2GRAY.v"
 `include "SOBEL_FILTER.v"
 `include "BMP_ROM.v"
 `include "BMP_LWORD_RAM.v"
@@ -37,25 +38,40 @@ wire [`LWORD_WIDTH-1:0] load_ram_din;
 wire [`ADDR_WIDTH-1:0] load_ram_addr;
 wire load_done;
 
-wire algo_ram_ren;
-wire [`ADDR_WIDTH-1:0] algo_ram_addr;
-wire algo_ram_wen;
-wire [`BYTE_WIDTH-1:0] algo_ram_in;
-wire [`ADDR_WIDTH-1:0] algo_ram_out_addr;
-wire done;
+wire bgr_done;
+wire dil_done;
+
+wire [`ADDR_WIDTH-1:0] bgr_ram_in_addr;
+wire bgr_ram_in_ren;
+wire bgr_ram_out_wen;
+wire [`BYTE_WIDTH-1:0] bgr_ram_out_in;
+wire [`ADDR_WIDTH-1:0] bgr_ram_out_addr;
+
+wire [`ADDR_WIDTH-1:0] dil_ram_in_addr;
+wire dil_ram_in_ren;
+wire dil_ram_out_wen;
+wire [`BYTE_WIDTH-1:0] dil_ram_out_in;
+wire [`ADDR_WIDTH-1:0] dil_ram_out_addr;
 
 wire [`ADDR_WIDTH-1:0] ram_in_addr_mux;
 wire ram_in_mux_wen_lword;
 wire [`LWORD_WIDTH-1:0] ram_in_mux_din;
 wire [7:0] ram_in_out;
 
-assign ram_in_addr_mux = load_done ? algo_ram_addr : load_ram_addr;
-assign ram_in_mux_wen_lword = load_done ? 1'b0 : load_ram_wen_lword;
+reg dil_phase;
+reg dil_start;
+
+assign ram_in_addr_mux = !load_done ? load_ram_addr : (dil_phase ? dil_ram_in_addr : bgr_ram_in_addr);
+assign ram_in_mux_wen_lword = !load_done ? load_ram_wen_lword : 1'b0;
 assign ram_in_mux_din = load_ram_din;
 assign ram_in_out = pick_byte_from_word(BMP_RAM_IN.RAM_read_word, ram_in_addr_mux[1:0]);
 
 wire [`LWORD_WIDTH-1:0] bmp_ram_din;
-assign bmp_ram_din = {24'h0, algo_ram_in};
+wire out_ram_wen;
+wire [`ADDR_WIDTH-1:0] out_ram_addr;
+assign bmp_ram_din = {24'h0, dil_phase ? dil_ram_out_in : bgr_ram_out_in};
+assign out_ram_wen = dil_phase ? dil_ram_out_wen : bgr_ram_out_wen;
+assign out_ram_addr = dil_phase ? dil_ram_out_addr : bgr_ram_out_addr;
 
 reg clk;
 reg rst_n;
@@ -63,6 +79,26 @@ reg in_valid;
 reg [`BYTE_WIDTH-1:0] bmp_data [0:`BMP_TOTAL_SIZE-1];
 
 always #(`CYCLE/2) clk = ~clk;
+
+integer sim_cycle_cnt;
+initial sim_cycle_cnt = 0;
+always @(posedge clk) begin
+    if (!rst_n)
+        sim_cycle_cnt = 0;
+    else begin
+        sim_cycle_cnt = sim_cycle_cnt + 1;
+        if (sim_cycle_cnt % 1000 == 0)
+            $display("[TESTBENCH] %0d cycles", sim_cycle_cnt);
+    end
+end
+
+task copy_out_to_in;
+    integer ci;
+    begin
+        for (ci = 0; ci < `BMP_RAM_NUM_WORDS; ci = ci + 1)
+            BMP_RAM_IN.ram_word[ci] = BMP_RAM_OUT.ram_word[ci];
+    end
+endtask
 
 initial begin
     $dumpfile("SOBEL_FILTER.vcd");
@@ -72,6 +108,8 @@ end
 initial begin
     rst_n = 1'b1;
     latency = 0;
+    dil_phase = 1'b0;
+    dil_start = 1'b0;
     force clk = 1'b0;
 
     input_bmp_id  = $fopen(`INPUT_BMP_IMAGE_PATH, "rb");
@@ -97,7 +135,24 @@ initial begin
 
     in_valid = 1'b1;
 
-    while(!done) begin
+    while(!load_done) begin
+        latency = latency + 1;
+        @(negedge clk);
+    end
+    while(!bgr_done) begin
+        latency = latency + 1;
+        @(negedge clk);
+    end
+    @(negedge clk);
+    copy_out_to_in();
+    @(posedge clk);
+    dil_phase = 1'b1;
+    @(posedge clk);
+    dil_start = 1'b1;
+    @(posedge clk);
+    dil_start = 1'b0;
+
+    while(!dil_done) begin
         latency = latency + 1;
         @(negedge clk);
     end
@@ -116,17 +171,30 @@ LOAD_BMP LOAD_BMP1(
     .load_done(load_done)
 );
 
-SOBEL_FILTER SOBEL_FILTER1(
+BGR2GRAY BGR2GRAY1(
     .clk(clk),
     .rst_n(rst_n),
     .start(load_done),
     .RAM_in_out(ram_in_out),
-    .RAM_in_ren(algo_ram_ren),
-    .RAM_in_addr(algo_ram_addr),
-    .RAM_out_wen(algo_ram_wen),
-    .RAM_out_in(algo_ram_in),
-    .RAM_out_addr(algo_ram_out_addr),
-    .done(done)
+    .RAM_in_ren(bgr_ram_in_ren),
+    .RAM_in_addr(bgr_ram_in_addr),
+    .RAM_out_wen(bgr_ram_out_wen),
+    .RAM_out_in(bgr_ram_out_in),
+    .RAM_out_addr(bgr_ram_out_addr),
+    .done(bgr_done)
+);
+
+IMAGE_DILATION SOBEL_FILTER1(
+    .clk(clk),
+    .rst_n(rst_n),
+    .start(dil_start),
+    .RAM_in_out(ram_in_out),
+    .RAM_in_ren(dil_ram_in_ren),
+    .RAM_in_addr(dil_ram_in_addr),
+    .RAM_out_wen(dil_ram_out_wen),
+    .RAM_out_in(dil_ram_out_in),
+    .RAM_out_addr(dil_ram_out_addr),
+    .done(dil_done)
 );
 
 BMP_ROM BMP_ROM1(
@@ -149,13 +217,13 @@ BMP_LWORD_RAM #(.NUM_WORDS(`BMP_RAM_NUM_WORDS)) BMP_RAM_IN(
 BMP_LWORD_RAM #(.NUM_WORDS(`BMP_RAM_NUM_WORDS)) BMP_RAM_OUT(
     .clk(clk),
     .RAM_wen_lword(1'b0),
-    .RAM_wen_byte(algo_ram_wen),
-    .RAM_addr(algo_ram_out_addr),
+    .RAM_wen_byte(out_ram_wen),
+    .RAM_addr(out_ram_addr),
     .RAM_din(bmp_ram_din),
     .RAM_read_word()
 );
 
-always @(posedge done)begin
+always @(posedge dil_done) begin
     @(negedge clk);
     $display("\033[0;32mOutput BMP Image!\033[m");
 

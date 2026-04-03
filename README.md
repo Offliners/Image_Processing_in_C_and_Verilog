@@ -10,6 +10,7 @@ In this repository there are some image processing algorithms implemented using 
     + [BGR to Gray](#bgr-to-gray)
     + [Binarization](#binarization)
     + [Image Vertical Flip](#image-vertical-flip)
+    + [Image Horizontal Flip](#image-horizontal-flip)
     + [Image Dilation](#image-dilation)
     + [Image Erosion](#image-erosion)
     + [Connected Components](#connected-components)
@@ -92,6 +93,18 @@ Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 | Input                   | Output (flipped)             |
 | ----------------------- | ---------------------------- |
 | ![input](./image_vertical_flip/lena256.bmp) | ![output](./image_vertical_flip/output.bmp) |
+
+</details>
+
+### [Image Horizontal Flip](./image_horizontal_flip/README.md)
+**Horizontal flip** (left–right mirror): each row’s BGR pixels are reversed. Unlike vertical flip, row order is unchanged.
+
+<details>
+<summary>More</summary>
+
+| Input                   | Output (mirrored)        |
+| ----------------------- | ------------------------ |
+| ![input](./image_horizontal_flip/lena256.bmp) | ![output](./image_horizontal_flip/output.bmp) |
 
 </details>
 

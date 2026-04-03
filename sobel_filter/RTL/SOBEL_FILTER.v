@@ -51,19 +51,9 @@ reg [`BYTE_WIDTH-1:0] gray_data [0:`BMP_PIXEL_COUNT-1];
 integer xi, yi;
 integer base_idx;
 integer gx, gy, mag;
-integer idx;
+integer pidx;
 
-function [7:0] to_gray;
-    input [7:0] b;
-    input [7:0] g;
-    input [7:0] r;
-    integer s;
-    begin
-        s = b * 30 + g * 150 + r * 76;
-        to_gray = s >> 8;
-    end
-endfunction
-
+/* Grayscale input (B=G=R) after BGR2GRAY */
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         state <= IDLE;
@@ -100,8 +90,8 @@ always @(posedge clk or negedge rst_n) begin
             PROCESS: begin
                 for(yi = 0; yi < `BMP_HEIGHT; yi = yi + 1) begin
                     for(xi = 0; xi < `BMP_WIDTH; xi = xi + 1) begin
-                        idx = `BMP_HEADER_SIZE + (yi * `BMP_WIDTH + xi) * 3;
-                        gray_data[yi * `BMP_WIDTH + xi] = to_gray(img_data[idx - `BMP_HEADER_SIZE], img_data[idx - `BMP_HEADER_SIZE + 1], img_data[idx - `BMP_HEADER_SIZE + 2]);
+                        pidx = (yi * `BMP_WIDTH + xi) * 3;
+                        gray_data[yi * `BMP_WIDTH + xi] = img_data[pidx];
                     end
                 end
                 for(yi = 0; yi < `BMP_HEIGHT; yi = yi + 1) begin

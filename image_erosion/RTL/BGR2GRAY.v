@@ -1,6 +1,6 @@
 `include "DEFINE.vh"
 
-module LAPLACIAN_FILTER(
+module BGR2GRAY(
     // Input signals
     clk,
     rst_n,
@@ -46,14 +46,12 @@ reg [31:0] write_idx;
 reg [`BYTE_WIDTH-1:0] header_data [0:`BMP_HEADER_SIZE-1];
 reg [`BYTE_WIDTH-1:0] img_data [0:PIXEL_DATA_SIZE-1];
 reg [`BYTE_WIDTH-1:0] out_data [0:PIXEL_DATA_SIZE-1];
-reg [`BYTE_WIDTH-1:0] gray_data [0:`BMP_PIXEL_COUNT-1];
 
 integer xi, yi;
 integer base_idx;
 integer sum;
-integer pidx;
+reg [`BYTE_WIDTH-1:0] b, g, r, gray;
 
-/* Grayscale input (B=G=R) after BGR2GRAY */
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         state <= IDLE;
@@ -90,30 +88,15 @@ always @(posedge clk or negedge rst_n) begin
             PROCESS: begin
                 for(yi = 0; yi < `BMP_HEIGHT; yi = yi + 1) begin
                     for(xi = 0; xi < `BMP_WIDTH; xi = xi + 1) begin
-                        pidx = (yi * `BMP_WIDTH + xi) * 3;
-                        gray_data[yi * `BMP_WIDTH + xi] = img_data[pidx];
-                    end
-                end
-                for(yi = 0; yi < `BMP_HEIGHT; yi = yi + 1) begin
-                    for(xi = 0; xi < `BMP_WIDTH; xi = xi + 1) begin
                         base_idx = (yi * `BMP_WIDTH + xi) * 3;
-                        if(yi == 0 || xi == 0 || yi == `BMP_HEIGHT - 1 || xi == `BMP_WIDTH - 1) begin
-                            out_data[base_idx] = 8'd0;
-                            out_data[base_idx + 1] = 8'd0;
-                            out_data[base_idx + 2] = 8'd0;
-                        end else begin
-                            sum = 0;
-                            sum = sum - gray_data[(yi - 1) * `BMP_WIDTH + xi];
-                            sum = sum - gray_data[yi * `BMP_WIDTH + (xi - 1)];
-                            sum = sum + (gray_data[yi * `BMP_WIDTH + xi] << 2);
-                            sum = sum - gray_data[yi * `BMP_WIDTH + (xi + 1)];
-                            sum = sum - gray_data[(yi + 1) * `BMP_WIDTH + xi];
-                            if(sum < 0) sum = -sum;
-                            if(sum > 255) sum = 255;
-                            out_data[base_idx] = sum[7:0];
-                            out_data[base_idx + 1] = sum[7:0];
-                            out_data[base_idx + 2] = sum[7:0];
-                        end
+                        b = img_data[base_idx];
+                        g = img_data[base_idx + 1];
+                        r = img_data[base_idx + 2];
+                        sum = b * 30 + g * 150 + r * 76;
+                        gray = sum >> 8;
+                        out_data[base_idx] = gray;
+                        out_data[base_idx + 1] = gray;
+                        out_data[base_idx + 2] = gray;
                     end
                 end
                 write_idx <= 0;
