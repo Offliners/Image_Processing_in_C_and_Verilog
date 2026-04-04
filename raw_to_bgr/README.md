@@ -14,7 +14,7 @@ $ ./raw_to_bgr.o ../lena256_rgb.raw
 
 # RTL
 $ cd ./raw_to_bgr/RTL
-$ make simulate
+$ make ivl_rtl
 
 # Compare C vs RTL
 $ cd ./raw_to_bgr

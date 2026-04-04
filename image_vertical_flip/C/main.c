@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     printf(YELLOW_COLOR "Output Image (vertical flip)\n" ENDL_COLOR);
     show_bmp_info(img);
 
-    u08Ret |= write_image("output.bmp", img);
+    u08Ret |= write_image("../output.bmp", img);
     free_bmp_image(img);
 
     return u08Ret;

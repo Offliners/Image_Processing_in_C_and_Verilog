@@ -14,7 +14,7 @@ $ ./image_dilation.o ../lena256.bmp
 
 # RTL
 $ cd ./image_dilation/RTL
-$ make simulate
+$ make ivl_rtl
 
 # Compare C vs RTL
 $ cd ./image_dilation

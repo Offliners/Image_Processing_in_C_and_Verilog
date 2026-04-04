@@ -1,9 +1,77 @@
+.DS_Store
+
 *.o
 *.vcd
 *.txt
 *.out
+Report/
+Netlist/
 
-.DS_Store
+# vcs
+*.fsdb 
+csrc/ 
+*.log 
+simv* 
+*.sdf.X 
+*.key
+BSSLib.lib++/
+
+# irun
+*.fsdb 
+*.sdf.X 
+INCA_libs/ 
+*.history 
+*.log
+
+# xrun
+*.fsdb 
+*.sdf.X 
+./xcelium.d 
+*.history 
+*.log
+
+# verdi
+nWaveLog/ 
+verdiLog/
+*.conf 
+*.rc 
+*.log
+*.fsdb.*
+
+# syn
+Netlist/*.* 
+Report/*.* 
+*.log 
+alib* 
+*.svf 
+dwsvf* 
+*.ddc 
+*.pvl 
+*.syn 
+*.mr
+*.sdc
+*.sdf
+*_SYN.v
+
+# power
+vcd.out 
+fsdb2vcdLog 
+Report/*
+
+# apr
+checkDesign
+*.log
+*.rpt*
+*.CCOPT.spec
+*.checkPlace
+StreamOut/* 
+CHIP_SYN.v
+*.globals
+extLogDir
+log/*
+DBS/*
+timingReports/*
+*.bin
 
 # load_bmp_image
 load_bmp_image/C/*.bmp

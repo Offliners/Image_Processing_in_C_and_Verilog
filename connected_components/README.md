@@ -14,7 +14,7 @@ $ ./connected_components.o ../lena256.bmp
 
 # RTL
 $ cd ./connected_components/RTL
-$ make simulate
+$ make ivl_rtl
 
 # Compare C vs RTL
 $ cd ./connected_components

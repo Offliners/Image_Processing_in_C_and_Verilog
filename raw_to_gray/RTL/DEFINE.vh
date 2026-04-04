@@ -20,6 +20,8 @@
 `define RAW_RAM_NUM_WORDS    (`RAW_ROM_NUM_WORDS)
 `define ROM_ADDR_WIDTH       16
 `define ADDR_WIDTH           18
+`define BMP_BYTE_FIFO_DEPTH  64
+`define BMP_BYTE_FIFO_AW     6
 
 // ROM/RAM Address
 `define INIT_ADDR            {`ADDR_WIDTH{1'b1}}

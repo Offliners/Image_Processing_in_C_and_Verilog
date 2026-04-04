@@ -14,9 +14,8 @@ $ ./mean_filter.o ../lena256.bmp 3
 
 # RTL
 $ cd ./mean_filter/RTL
-$ make check
-$ make simulate
-$ make wave
+$ make ivl_rtl
+$ make gtk_wave
 
 # Compare C vs RTL
 $ cd ./mean_filter

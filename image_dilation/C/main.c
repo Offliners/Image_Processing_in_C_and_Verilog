@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     printf(YELLOW_COLOR "Output Image\n" ENDL_COLOR);
     show_bmp_info(out_img);
 
-    u08Ret |= write_image("output.bmp", out_img);
+    u08Ret |= write_image("../output.bmp", out_img);
 
     free_bmp_image(img);
     free_bmp_image(out_img);

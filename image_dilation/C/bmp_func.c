@@ -20,9 +20,11 @@ static BYTE *create_gray_buffer(const BMPImage *src_img)
     if(!gray)
         return NULL;
 
-    for(LWORD y = 0; y < height; y++)
+    LWORD y;
+    LWORD x;
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             LWORD idx = y * row_size + x * 3;
             BYTE blue = src_img->p08Data[idx];
@@ -55,14 +57,18 @@ BMPImage *dilate_bmp(BMPImage *src_img, BYTE threshold)
         return NULL;
     }
 
-    for(LWORD y = 0; y < height; y++)
+    LWORD y;
+    LWORD x;
+    LWORD ky;
+    LWORD kx;
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             BYTE result = BLACK_PIXEL_DATA;
-            for(LWORD ky = 0; ky < 3; ky++)
+            for(ky = 0; ky < 3; ky++)
             {
-                for(LWORD kx = 0; kx < 3; kx++)
+                for(kx = 0; kx < 3; kx++)
                 {
                     LWORD ny = (LWORD)((long)y + (long)ky - 1);
                     LWORD nx = (LWORD)((long)x + (long)kx - 1);

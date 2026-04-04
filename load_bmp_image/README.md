@@ -14,9 +14,8 @@ $ ./load_bmp_image.o ../lena256.bmp
 
 # RTL
 $ cd ./load_bmp_image/RTL
-$ make check
-$ make simulate
-$ make wave
+$ make ivl_rtl
+$ make gtk_wave
 
 # Compare C vs RTL (writes under C/ and RTL/)
 $ cd ./load_bmp_image

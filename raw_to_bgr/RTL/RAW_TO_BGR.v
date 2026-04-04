@@ -1,200 +1,185 @@
 `include "DEFINE.vh"
 
-module RAW_TO_BGR(
-    // Input signals
-    clk,
-    rst_n,
-    start,
-    RAM_in_lword,
+/* Stream RGB RAW from ROM (random access) into BMP byte order with vertical flip.
+ * ROM_ren/ROM_addr driven combinationally during FETCH (same pattern as LOAD_RAW).
+ * Output goes to a small BYTE_SYNC_FIFO instead of a full frame buffer. */
 
-    // Output signals
-    RAM_in_ren,
-    RAM_in_addr,
-    RAM_out_wen,
-    RAM_out_in,
-    RAM_out_addr,
-    done
+module RAW_TO_BGR(
+    input  wire clk,
+    input  wire rst_n,
+    input  wire start,
+    input  wire [`LWORD_WIDTH-1:0] ROM_out,
+    output reg  ROM_ren,
+    output reg  [`ROM_ADDR_WIDTH-1:0] ROM_addr,
+    output reg  fifo_wr_en,
+    output reg  [7:0] fifo_din,
+    input  wire fifo_full,
+    output reg  done
 );
 
-input clk;
-input rst_n;
-input start;
-input [`LWORD_WIDTH-1:0] RAM_in_lword;
+    localparam [2:0] ST_IDLE      = 3'd0,
+                     ST_HEAD      = 3'd1,
+                     ST_ROM_FETCH = 3'd2,
+                     ST_ROM_LATCH = 3'd3,
+                     ST_FINISH    = 3'd4;
 
-output reg RAM_in_ren;
-output reg [`ADDR_WIDTH-1:0] RAM_in_addr;
-output reg RAM_out_wen;
-output reg [`BYTE_WIDTH-1:0] RAM_out_in;
-output reg [`ADDR_WIDTH-1:0] RAM_out_addr;
-output reg done;
+    localparam [18:0] BMP_BYTES = `BMP_HEADER_SIZE + (`BMP_WIDTH * `BMP_HEIGHT * `BMP_CHANNEL);
+    localparam [18:0] BMP_LAST  = BMP_BYTES - 1'b1;
 
-localparam [2:0] IDLE       = 3'b000,
-                 LOAD_RAW   = 3'b001,
-                 PROCESS    = 3'b010,
-                 WRITE_HEAD = 3'b011,
-                 WRITE_DATA = 3'b100,
-                 FINISH     = 3'b101;
+    reg [2:0] state;
+    reg [18:0] bidx;
+    reg [1:0] rom_sel_r;
 
-localparam integer PIXEL_DATA_SIZE = (`BMP_TOTAL_SIZE - `BMP_HEADER_SIZE);
+    reg [31:0] p_c, bmp_lin_c, bmp_row_c, bmp_col_c, raw_row_c, raw_lin_c, raw_byte_c;
+    reg [`ROM_ADDR_WIDTH-1:0] rom_word_c;
+    reg [7:0] hbyte_c;
 
-reg [2:0] state;
-reg [31:0] load_idx;
-reg [31:0] write_idx;
-
-reg [`BYTE_WIDTH-1:0] header_data [0:`BMP_HEADER_SIZE-1];
-reg [`BYTE_WIDTH-1:0] raw_data [0:`RAW_TOTAL_SIZE-1];
-reg [`BYTE_WIDTH-1:0] out_data [0:PIXEL_DATA_SIZE-1];
-
-integer i;
-integer pixel_idx;
-integer yi, xi, dst_y, dst_base;
-
-always @(posedge clk or negedge rst_n) begin
-    if(!rst_n) begin
-        state <= IDLE;
-        load_idx <= 0;
-        write_idx <= 0;
-        done <= 1'b0;
-    end else begin
-        case(state)
-            IDLE: begin
-                done <= 1'b0;
-                if(start) begin
-                    load_idx <= 0;
-                    state <= LOAD_RAW;
-                end
-            end
-            LOAD_RAW: begin
-                raw_data[(load_idx << 2) + 0] <= RAM_in_lword[7:0];
-                raw_data[(load_idx << 2) + 1] <= RAM_in_lword[15:8];
-                raw_data[(load_idx << 2) + 2] <= RAM_in_lword[23:16];
-                raw_data[(load_idx << 2) + 3] <= RAM_in_lword[31:24];
-                if(load_idx == (`RAW_ROM_NUM_WORDS - 1)) begin
-                    state <= PROCESS;
-                end else begin
-                    load_idx <= load_idx + 1;
-                end
-            end
-            PROCESS: begin
-                // BMP header for 256x256 24-bit
-                header_data[0]  = 8'h42;
-                header_data[1]  = 8'h4D;
-                header_data[2]  = 8'h36;
-                header_data[3]  = 8'h00;
-                header_data[4]  = 8'h03;
-                header_data[5]  = 8'h00;
-                header_data[6]  = 8'h00;
-                header_data[7]  = 8'h00;
-                header_data[8]  = 8'h00;
-                header_data[9]  = 8'h00;
-                header_data[10] = 8'h36;
-                header_data[11] = 8'h00;
-                header_data[12] = 8'h00;
-                header_data[13] = 8'h00;
-                header_data[14] = 8'h28;
-                header_data[15] = 8'h00;
-                header_data[16] = 8'h00;
-                header_data[17] = 8'h00;
-                header_data[18] = 8'h00;
-                header_data[19] = 8'h01;
-                header_data[20] = 8'h00;
-                header_data[21] = 8'h00;
-                header_data[22] = 8'h00;
-                header_data[23] = 8'h01;
-                header_data[24] = 8'h00;
-                header_data[25] = 8'h00;
-                header_data[26] = 8'h01;
-                header_data[27] = 8'h00;
-                header_data[28] = 8'h18;
-                header_data[29] = 8'h00;
-                header_data[30] = 8'h00;
-                header_data[31] = 8'h00;
-                header_data[32] = 8'h00;
-                header_data[33] = 8'h00;
-                header_data[34] = 8'h00;
-                header_data[35] = 8'h00;
-                header_data[36] = 8'h03;
-                header_data[37] = 8'h00;
-                header_data[38] = 8'h00;
-                header_data[39] = 8'h00;
-                header_data[40] = 8'h00;
-                header_data[41] = 8'h00;
-                header_data[42] = 8'h00;
-                header_data[43] = 8'h00;
-                header_data[44] = 8'h00;
-                header_data[45] = 8'h00;
-                header_data[46] = 8'h00;
-                header_data[47] = 8'h00;
-                header_data[48] = 8'h00;
-                header_data[49] = 8'h00;
-                header_data[50] = 8'h00;
-                header_data[51] = 8'h00;
-                header_data[52] = 8'h00;
-                header_data[53] = 8'h00;
-
-                for(pixel_idx = 0; pixel_idx < (`BMP_WIDTH * `BMP_HEIGHT); pixel_idx = pixel_idx + 1) begin
-                    yi = pixel_idx / `BMP_WIDTH;
-                    xi = pixel_idx % `BMP_WIDTH;
-                    dst_y = `BMP_HEIGHT - 1 - yi;
-                    dst_base = (dst_y * `BMP_WIDTH + xi) * 3;
-                    out_data[dst_base]     = raw_data[pixel_idx * 3 + 2];
-                    out_data[dst_base + 1] = raw_data[pixel_idx * 3 + 1];
-                    out_data[dst_base + 2] = raw_data[pixel_idx * 3];
-                end
-                write_idx <= 0;
-                state <= WRITE_HEAD;
-            end
-            WRITE_HEAD: begin
-                if(write_idx == `BMP_HEADER_SIZE - 1) begin
-                    write_idx <= 0;
-                    state <= WRITE_DATA;
-                end else begin
-                    write_idx <= write_idx + 1;
-                end
-            end
-            WRITE_DATA: begin
-                if(write_idx == PIXEL_DATA_SIZE - 1) begin
-                    done <= 1'b1;
-                    state <= FINISH;
-                end else begin
-                    write_idx <= write_idx + 1;
-                end
-            end
-            FINISH: begin
-                done <= 1'b1;
-            end
-            default: state <= IDLE;
+    always @(*) begin
+        hbyte_c = 8'h0;
+        case (bidx[5:0])
+            6'd0:  hbyte_c = 8'h42;
+            6'd1:  hbyte_c = 8'h4D;
+            6'd2:  hbyte_c = 8'h36;
+            6'd3:  hbyte_c = 8'h00;
+            6'd4:  hbyte_c = 8'h03;
+            6'd5:  hbyte_c = 8'h00;
+            6'd6:  hbyte_c = 8'h00;
+            6'd7:  hbyte_c = 8'h00;
+            6'd8:  hbyte_c = 8'h00;
+            6'd9:  hbyte_c = 8'h00;
+            6'd10: hbyte_c = 8'h36;
+            6'd11: hbyte_c = 8'h00;
+            6'd12: hbyte_c = 8'h00;
+            6'd13: hbyte_c = 8'h00;
+            6'd14: hbyte_c = 8'h28;
+            6'd15: hbyte_c = 8'h00;
+            6'd16: hbyte_c = 8'h00;
+            6'd17: hbyte_c = 8'h00;
+            6'd18: hbyte_c = 8'h00;
+            6'd19: hbyte_c = 8'h01;
+            6'd20: hbyte_c = 8'h00;
+            6'd21: hbyte_c = 8'h00;
+            6'd22: hbyte_c = 8'h00;
+            6'd23: hbyte_c = 8'h01;
+            6'd24: hbyte_c = 8'h00;
+            6'd25: hbyte_c = 8'h00;
+            6'd26: hbyte_c = 8'h01;
+            6'd27: hbyte_c = 8'h00;
+            6'd28: hbyte_c = 8'h18;
+            6'd29: hbyte_c = 8'h00;
+            6'd30: hbyte_c = 8'h00;
+            6'd31: hbyte_c = 8'h00;
+            6'd32: hbyte_c = 8'h00;
+            6'd33: hbyte_c = 8'h00;
+            6'd34: hbyte_c = 8'h00;
+            6'd35: hbyte_c = 8'h00;
+            6'd36: hbyte_c = 8'h03;
+            6'd37: hbyte_c = 8'h00;
+            6'd38: hbyte_c = 8'h00;
+            6'd39: hbyte_c = 8'h00;
+            6'd40: hbyte_c = 8'h00;
+            6'd41: hbyte_c = 8'h00;
+            6'd42: hbyte_c = 8'h00;
+            6'd43: hbyte_c = 8'h00;
+            6'd44: hbyte_c = 8'h00;
+            6'd45: hbyte_c = 8'h00;
+            6'd46: hbyte_c = 8'h00;
+            6'd47: hbyte_c = 8'h00;
+            6'd48: hbyte_c = 8'h00;
+            6'd49: hbyte_c = 8'h00;
+            6'd50: hbyte_c = 8'h00;
+            6'd51: hbyte_c = 8'h00;
+            6'd52: hbyte_c = 8'h00;
+            6'd53: hbyte_c = 8'h00;
+            default: hbyte_c = 8'h0;
         endcase
     end
-end
 
-always @(*) begin
-    RAM_in_ren = 1'b0;
-    RAM_in_addr = 0;
-    RAM_out_wen = 1'b0;
-    RAM_out_addr = 0;
-    RAM_out_in = 0;
+    always @(*) begin
+        p_c = bidx - `BMP_HEADER_SIZE;
+        bmp_lin_c = p_c / 32'd3;
+        bmp_row_c = bmp_lin_c / `BMP_WIDTH;
+        bmp_col_c = bmp_lin_c % `BMP_WIDTH;
+        raw_row_c = `BMP_HEIGHT - 32'd1 - bmp_row_c;
+        raw_lin_c = raw_row_c * `BMP_WIDTH + bmp_col_c;
+        raw_byte_c = raw_lin_c * 32'd3 + (32'd2 - (p_c % 32'd3));
+        rom_word_c = raw_byte_c[`ROM_ADDR_WIDTH+1:2];
+    end
 
-    case(state)
-        LOAD_RAW: begin
-            RAM_in_ren = 1'b1;
-            RAM_in_addr = {load_idx[`ROM_ADDR_WIDTH-1:0], 2'b00};
-        end
-        WRITE_HEAD: begin
-            RAM_out_wen = 1'b1;
-            RAM_out_addr = write_idx[`ADDR_WIDTH-1:0];
-            RAM_out_in = header_data[write_idx];
-        end
-        WRITE_DATA: begin
-            RAM_out_wen = 1'b1;
-            RAM_out_addr = `BMP_HEADER_SIZE + write_idx[`ADDR_WIDTH-1:0];
-            RAM_out_in = out_data[write_idx];
-        end
-        default: begin
-            RAM_in_ren = 1'b0;
-            RAM_out_wen = 1'b0;
-        end
-    endcase
-end
+    always @(*) begin
+        ROM_ren  = 1'b0;
+        ROM_addr = rom_word_c;
+        case (state)
+            ST_ROM_FETCH:
+                if (!fifo_full && (bidx != BMP_BYTES))
+                    ROM_ren = 1'b1;
+            default: begin
+            end
+        endcase
+    end
 
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state      <= ST_IDLE;
+            bidx       <= 0;
+            rom_sel_r  <= 0;
+            done       <= 1'b0;
+            fifo_wr_en <= 1'b0;
+            fifo_din   <= 8'h0;
+        end else begin
+            fifo_wr_en <= 1'b0;
+            case (state)
+                ST_IDLE: begin
+                    done <= 1'b0;
+                    if (start) begin
+                        bidx  <= 0;
+                        state <= ST_HEAD;
+                    end
+                end
+                ST_HEAD: begin
+                    if (!fifo_full) begin
+                        fifo_wr_en <= 1'b1;
+                        fifo_din   <= hbyte_c;
+                        if (bidx == (`BMP_HEADER_SIZE - 1)) begin
+                            bidx  <= `BMP_HEADER_SIZE;
+                            state <= ST_ROM_FETCH;
+                        end else
+                            bidx <= bidx + 1'b1;
+                    end
+                end
+                ST_ROM_FETCH: begin
+                    if (!fifo_full) begin
+                        if (bidx == BMP_BYTES) begin
+                            done  <= 1'b1;
+                            state <= ST_FINISH;
+                        end else begin
+                            rom_sel_r <= raw_byte_c[1:0];
+                            state     <= ST_ROM_LATCH;
+                        end
+                    end
+                end
+                ST_ROM_LATCH: begin
+                    if (!fifo_full) begin
+                        fifo_wr_en <= 1'b1;
+                        case (rom_sel_r)
+                            2'b00: fifo_din <= ROM_out[7:0];
+                            2'b01: fifo_din <= ROM_out[15:8];
+                            2'b10: fifo_din <= ROM_out[23:16];
+                            default: fifo_din <= ROM_out[31:24];
+                        endcase
+                        if (bidx == BMP_LAST) begin
+                            bidx  <= BMP_BYTES;
+                            done  <= 1'b1;
+                            state <= ST_FINISH;
+                        end else begin
+                            bidx  <= bidx + 1'b1;
+                            state <= ST_ROM_FETCH;
+                        end
+                    end
+                end
+                ST_FINISH: done <= 1'b1;
+                default: state <= ST_IDLE;
+            endcase
+        end
+    end
 endmodule

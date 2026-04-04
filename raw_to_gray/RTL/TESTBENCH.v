@@ -2,51 +2,43 @@
 `define CYCLE 10.0
 
 `include "DEFINE.vh"
-`include "LOAD_RAW.v"
 `include "RAW_TO_GRAY.v"
 `include "RAW_ROM.v"
-`include "BMP_LWORD_RAM.v"
+`include "BYTE_SYNC_FIFO.v"
 
 module TESTBENCH();
-integer i, k, latency;
-integer bi, wi;
+
+integer i, k;
 integer input_raw_id;
-integer txt_raw_id;
-integer output_bmp_id;
-reg [7:0] pch;
+`ifdef __ICARUS__
+integer put_rc;
+`endif
 
 wire [`LWORD_WIDTH-1:0] ROM_out;
-wire [`ROM_ADDR_WIDTH-1:0] ROM_addr;
 wire ROM_ren;
+wire [`ROM_ADDR_WIDTH-1:0] ROM_addr;
 
-wire load_ram_wen_lword;
-wire [`LWORD_WIDTH-1:0] load_ram_din;
-wire [`ADDR_WIDTH-1:0] load_ram_addr;
-wire load_done;
+wire fifo_wr_en;
+wire [7:0] fifo_din;
+wire fifo_full;
+reg fifo_rd_en;
+wire [7:0] fifo_dout;
+wire fifo_empty;
+wire fifo_rd_valid;
+wire [7:0] fifo_rd_data;
 
-wire algo_ram_ren;
-wire [`ADDR_WIDTH-1:0] algo_ram_addr;
-wire algo_ram_wen;
-wire [`BYTE_WIDTH-1:0] algo_ram_in;
-wire [`ADDR_WIDTH-1:0] algo_ram_out_addr;
 wire done;
-
-wire [`ADDR_WIDTH-1:0] raw_ram_addr;
-wire raw_ram_mux_wen_lword;
-wire [`LWORD_WIDTH-1:0] raw_ram_din;
-wire [`LWORD_WIDTH-1:0] ram_in_lword;
-wire [`LWORD_WIDTH-1:0] bmp_ram_din;
-
-assign raw_ram_addr = load_done ? algo_ram_addr : load_ram_addr;
-assign raw_ram_mux_wen_lword = load_done ? 1'b0 : load_ram_wen_lword;
-assign raw_ram_din = load_ram_din;
-assign ram_in_lword = RAW_RAM_IN.RAM_read_word;
-assign bmp_ram_din = {24'h0, algo_ram_in};
 
 reg clk;
 reg rst_n;
 reg in_valid;
 reg [`BYTE_WIDTH-1:0] raw_data [0:`RAW_TOTAL_SIZE-1];
+
+wire algo_start;
+assign algo_start = rst_n & in_valid;
+
+integer output_bmp_id;
+reg [18:0] bmp_written;
 
 always #(`CYCLE/2) clk = ~clk;
 
@@ -57,8 +49,8 @@ always @(posedge clk) begin
         sim_cycle_cnt = 0;
     else begin
         sim_cycle_cnt = sim_cycle_cnt + 1;
-        if (sim_cycle_cnt % 1000 == 0)
-            $display("[TESTBENCH] %0d cycles", sim_cycle_cnt);
+        if (sim_cycle_cnt % 100000 == 0)
+            $display("[RAW TO GRAY] %0d cycles", sim_cycle_cnt);
     end
 end
 
@@ -68,20 +60,27 @@ initial begin
 end
 
 initial begin
-    rst_n = 1'b1;  
-    latency = 0;
+    rst_n = 1'b1;
     force clk = 1'b0;
+    fifo_rd_en   = 1'b0;
+    output_bmp_id = 0;
 
-    input_raw_id  = $fopen(`INPUT_RAW_IMAGE_PATH, "rb");
-    if(!input_raw_id) display_fail;
+    input_raw_id = $fopen(`INPUT_RAW_IMAGE_PATH, "rb");
+    if (!input_raw_id) display_fail;
     k = $fread(raw_data, input_raw_id);
     $fclose(input_raw_id);
 
-    txt_raw_id = $fopen(`OUTPUT_RAWDATA_TXT_PATH, "w");
-    for(i = 0; i < `RAW_TOTAL_SIZE; i = i + 4)
-        $fwrite(txt_raw_id, "%08h\n", {raw_data[i+3], raw_data[i+2], raw_data[i+1], raw_data[i]});
-    $fwrite(txt_raw_id, "%08h\n", 32'h0);
-    $fclose(txt_raw_id);
+    begin
+        integer txt_raw_id;
+        txt_raw_id = $fopen(`OUTPUT_RAWDATA_TXT_PATH, "w");
+        for (i = 0; i < `RAW_TOTAL_SIZE; i = i + 4)
+            $fwrite(txt_raw_id, "%08h\n", {raw_data[i+3], raw_data[i+2], raw_data[i+1], raw_data[i]});
+        $fwrite(txt_raw_id, "%08h\n", 32'h0);
+        $fclose(txt_raw_id);
+    end
+
+    output_bmp_id = $fopen(`OUTPUT_BMP_IMAGE_PATH, "wb");
+    if (!output_bmp_id) display_fail;
 
     #(0.5) rst_n = 0;
     #(3)   release clk;
@@ -89,45 +88,71 @@ initial begin
 
     in_valid = 1'b1;
 
-    while(!done) begin
-        latency = latency + 1;
-        @(negedge clk);
+    begin
+        integer cyc_wait;
+        cyc_wait = 0;
+        while (bmp_written != `BMP_TOTAL_SIZE) begin
+            @(posedge clk);
+            cyc_wait = cyc_wait + 1;
+            if (cyc_wait > 8000000) begin
+                $display("TIMEOUT bmp_written=%0d done=%b full=%b empty=%b",
+                         bmp_written, done, fifo_full, fifo_empty);
+                $finish(1);
+            end
+        end
     end
+
+    $fclose(output_bmp_id);
+    #(100) $finish;
 end
 
-LOAD_RAW LOAD_RAW1(
-    .clk(clk),
-    .rst_n(rst_n),
-    .in_valid(in_valid),
-    .ROM_out(ROM_out),
-    .ROM_ren(ROM_ren),
-    .ROM_addr(ROM_addr),
-    .RAM_wen_lword(load_ram_wen_lword),
-    .RAM_din(load_ram_din),
-    .RAM_addr(load_ram_addr),
-    .load_done(load_done)
-);
+always @(posedge clk) begin
+    if (!rst_n)
+        fifo_rd_en <= 1'b0;
+    else
+        fifo_rd_en <= !fifo_empty;
+end
 
-BMP_LWORD_RAM #(.NUM_WORDS(`RAW_RAM_NUM_WORDS)) RAW_RAM_IN(
-    .clk(clk),
-    .RAM_wen_lword(raw_ram_mux_wen_lword),
-    .RAM_wen_byte(1'b0),
-    .RAM_addr(raw_ram_addr),
-    .RAM_din(raw_ram_din),
-    .RAM_read_word()
-);
+always @(posedge clk) begin
+    if (!rst_n)
+        bmp_written <= 0;
+    else if (fifo_rd_valid) begin
+`ifdef __ICARUS__
+        put_rc = $fputc(fifo_rd_data, output_bmp_id);
+`else
+        $fwrite(output_bmp_id, "%c", fifo_rd_data);
+`endif
+        bmp_written <= bmp_written + 1'b1;
+    end
+end
 
 RAW_TO_GRAY RAW_TO_GRAY1(
     .clk(clk),
     .rst_n(rst_n),
-    .start(load_done),
-    .RAM_in_lword(ram_in_lword),
-    .RAM_in_ren(algo_ram_ren),
-    .RAM_in_addr(algo_ram_addr),
-    .RAM_out_wen(algo_ram_wen),
-    .RAM_out_in(algo_ram_in),
-    .RAM_out_addr(algo_ram_out_addr),
+    .start(algo_start),
+    .ROM_out(ROM_out),
+    .ROM_ren(ROM_ren),
+    .ROM_addr(ROM_addr),
+    .fifo_wr_en(fifo_wr_en),
+    .fifo_din(fifo_din),
+    .fifo_full(fifo_full),
     .done(done)
+);
+
+BYTE_SYNC_FIFO #(
+    .DEPTH(`BMP_BYTE_FIFO_DEPTH),
+    .ADDR_W(`BMP_BYTE_FIFO_AW)
+) BMP_FIFO (
+    .clk(clk),
+    .rst_n(rst_n),
+    .wr_en(fifo_wr_en),
+    .din(fifo_din),
+    .rd_en(fifo_rd_en),
+    .dout(fifo_dout),
+    .full(fifo_full),
+    .empty(fifo_empty),
+    .rd_valid(fifo_rd_valid),
+    .rd_data(fifo_rd_data)
 );
 
 RAW_ROM RAW_ROM1(
@@ -138,36 +163,11 @@ RAW_ROM RAW_ROM1(
     .ROM_out(ROM_out)
 );
 
-BMP_LWORD_RAM #(.NUM_WORDS(`BMP_RAM_NUM_WORDS)) BMP_RAM_OUT(
-    .clk(clk),
-    .RAM_wen_lword(1'b0),
-    .RAM_wen_byte(algo_ram_wen),
-    .RAM_addr(algo_ram_out_addr),
-    .RAM_din(bmp_ram_din),
-    .RAM_read_word()
-);
-
-always @(posedge done)begin
-    @(negedge clk);
-    output_bmp_id = $fopen(`OUTPUT_BMP_IMAGE_PATH, "wb");
-    for(bi = 0; bi < `BMP_TOTAL_SIZE; bi = bi + 1) begin
-        wi = bi >> 2;
-        case (bi[1:0])
-            2'b00: pch = BMP_RAM_OUT.ram_word[wi][7:0];
-            2'b01: pch = BMP_RAM_OUT.ram_word[wi][15:8];
-            2'b10: pch = BMP_RAM_OUT.ram_word[wi][23:16];
-            2'b11: pch = BMP_RAM_OUT.ram_word[wi][31:24];
-        endcase
-        $fwrite(output_bmp_id, "%c", pch);
-    end
-    $fclose(output_bmp_id);
-
-    #(100) $finish;
-end
-
-task display_fail; begin
+task display_fail;
+    begin
         $display("\033[0;31mImage not found!\033[m");
         $finish;
-end endtask
+    end
+endtask
 
 endmodule

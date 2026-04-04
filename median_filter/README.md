@@ -20,9 +20,8 @@ $ ./median_filter.o ../lena256_noise.bmp 3
 
 # RTL
 $ cd ./median_filter/RTL
-$ make check
-$ make simulate
-$ make wave
+$ make ivl_rtl
+$ make gtk_wave
 
 # Compare C vs RTL
 $ cd ./median_filter

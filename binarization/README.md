@@ -14,9 +14,8 @@ $ ./binarization.o ../lena256.bmp
 
 # RTL
 $ cd ./binarization/RTL
-$ make check
-$ make simulate
-$ make wave
+$ make ivl_rtl
+$ make gtk_wave
 
 # Compare C vs RTL
 $ cd ./binarization

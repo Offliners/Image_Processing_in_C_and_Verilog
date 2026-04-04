@@ -54,9 +54,11 @@ BMPImage *raw_to_gray_bmp(const BYTE *raw, LWORD width, LWORD height)
         return NULL;
 
     LWORD row_size = get_image_row_size_bytes(&img->header);
-    for(LWORD y = 0; y < height; y++)
+    LWORD y;
+    LWORD x;
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             LWORD raw_index = y * width + x;
             LWORD out_index = y * row_size + x * 3;

@@ -15,7 +15,7 @@ $ ./vertical_flip.o ../lena256.bmp
 
 # RTL
 $ cd ./image_vertical_flip/RTL
-$ make simulate
+$ make ivl_rtl
 
 # Compare C vs RTL
 $ cd ./image_vertical_flip

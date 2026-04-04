@@ -15,7 +15,7 @@ $ ./image_histogram.o ../lena256.bmp
 
 # RTL
 $ cd ./image_histogram/RTL
-$ make simulate
+$ make ivl_rtl
 
 # Compare C vs RTL
 $ cd ./image_histogram

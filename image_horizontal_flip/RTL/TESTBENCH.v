@@ -3,7 +3,11 @@
 
 `include "DEFINE.vh"
 `include "LOAD_BMP.v"
+`ifdef GATE
+`include "HORIZONTAL_FLIP_SYN.v"
+`else
 `include "HORIZONTAL_FLIP.v"
+`endif
 `include "BMP_ROM.v"
 `include "BMP_LWORD_RAM.v"
 
@@ -14,6 +18,9 @@ integer bi, wi;
 integer input_bmp_id;
 integer txt_bmp_id;
 integer output_bmp_id;
+`ifdef __ICARUS__
+integer put_rc;
+`endif
 reg [7:0] pch;
 reg [31:0] dword;
 
@@ -72,13 +79,18 @@ always @(posedge clk) begin
     else begin
         sim_cycle_cnt = sim_cycle_cnt + 1;
         if (sim_cycle_cnt % 1000 == 0)
-            $display("[TESTBENCH] %0d cycles", sim_cycle_cnt);
+            $display("[IMAGE HORIZONTAL FLIP] %0d cycles", sim_cycle_cnt);
     end
 end
 
 initial begin
+`ifdef GATE
+    $sdf_annotate("HORIZONTAL_FLIP_SYN.sdf", HORIZONTAL_FLIP1);
+`endif
+`ifndef GATE
     $dumpfile("HORIZONTAL_FLIP.vcd");
     $dumpvars;
+`endif
 end
 
 initial begin
@@ -182,7 +194,11 @@ always @(posedge done)begin
             2'b10: pch = BMP_RAM_OUT.ram_word[wi][23:16];
             2'b11: pch = BMP_RAM_OUT.ram_word[wi][31:24];
         endcase
+`ifdef __ICARUS__
+        put_rc = $fputc(pch, output_bmp_id);
+`else
         $fwrite(output_bmp_id, "%c", pch);
+`endif
     end
     $fclose(output_bmp_id);
 

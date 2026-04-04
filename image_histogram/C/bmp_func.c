@@ -55,11 +55,17 @@ BMPImage *histogram_bmp(BMPImage *src_img)
     LWORD height = src_img->header.stBMPInfoHeader.u32ImageHeight;
     LWORD row_size = get_image_row_size_bytes(&src_img->header);
     LWORD total = width * height;
+    LWORD y;
+    LWORD x;
+    LWORD i;
+    LWORD bar_height;
+    LWORD draw_y;
+    LWORD out_idx;
 
     LWORD hist[256] = {0};
-    for(LWORD y = 0; y < height; y++)
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             LWORD idx = y * row_size + x * 3;
             /* Grayscale 24-bit BMP (B=G=R): use B channel */
@@ -69,7 +75,7 @@ BMPImage *histogram_bmp(BMPImage *src_img)
     }
 
     LWORD max_count = 0;
-    for(LWORD i = 0; i < 256; i++)
+    for(i = 0; i < 256; i++)
     {
         if(hist[i] > max_count)
             max_count = hist[i];
@@ -82,13 +88,13 @@ BMPImage *histogram_bmp(BMPImage *src_img)
         return NULL;
 
     LWORD hist_row_size = get_image_row_size_bytes(&hist_img->header);
-    for(LWORD x = 0; x < HIST_WIDTH; x++)
+    for(x = 0; x < HIST_WIDTH; x++)
     {
-        LWORD bar_height = (hist[x] * (HIST_HEIGHT - 1)) / max_count;
-        for(LWORD y = 0; y <= bar_height; y++)
+        bar_height = (hist[x] * (HIST_HEIGHT - 1)) / max_count;
+        for(y = 0; y <= bar_height; y++)
         {
-            LWORD draw_y = (HIST_HEIGHT - 1) - y;
-            LWORD out_idx = draw_y * hist_row_size + x * 3;
+            draw_y = (HIST_HEIGHT - 1) - y;
+            out_idx = draw_y * hist_row_size + x * 3;
             hist_img->p08Data[out_idx] = 0;
             hist_img->p08Data[out_idx + 1] = 0;
             hist_img->p08Data[out_idx + 2] = 0;

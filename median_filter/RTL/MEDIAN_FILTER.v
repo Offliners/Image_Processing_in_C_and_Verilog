@@ -1,26 +1,15 @@
 `include "DEFINE.vh"
 
+// 3-line BGR buffer + streaming (no full-frame buffers).
+
 module MEDIAN_FILTER(
-    // Input signals
-    clk,
-    rst_n,
-    start,
-    RAM_in_out,
-
-    // Output signals
-    RAM_in_ren,
-    RAM_in_addr,
-    RAM_out_wen,
-    RAM_out_in,
-    RAM_out_addr,
-    done
+    clk, rst_n, start, RAM_in_out,
+    RAM_in_ren, RAM_in_addr, RAM_out_wen, RAM_out_in, RAM_out_addr, done
 );
-
 input clk;
 input rst_n;
 input start;
 input [`BYTE_WIDTH-1:0] RAM_in_out;
-
 output reg RAM_in_ren;
 output reg [`ADDR_WIDTH-1:0] RAM_in_addr;
 output reg RAM_out_wen;
@@ -28,137 +17,166 @@ output reg [`BYTE_WIDTH-1:0] RAM_out_in;
 output reg [`ADDR_WIDTH-1:0] RAM_out_addr;
 output reg done;
 
-localparam [2:0] IDLE        = 3'b000,
-                 COPY_HEADER = 3'b001,
-                 LOAD_PIXELS = 3'b010,
-                 PROCESS     = 3'b011,
-                 WRITE_HEAD  = 3'b100,
-                 WRITE_DATA  = 3'b101,
-                 FINISH      = 3'b110;
+localparam integer RB = `BMP_WIDTH * 3;
+localparam [31:0] PIXEL_DATA_SIZE = (`BMP_TOTAL_SIZE - `BMP_HEADER_SIZE);
+localparam [`ADDR_WIDTH-1:0] HDR_LAST = `BMP_HEADER_SIZE - 1;
+localparam [31:0] PIXEL_LAST = PIXEL_DATA_SIZE - 1;
 
-localparam integer PIXEL_DATA_SIZE = (`BMP_TOTAL_SIZE - `BMP_HEADER_SIZE);
+localparam [2:0] S_IDLE = 3'd0, S_HDR_LD = 3'd1, S_HDR_OUT = 3'd2, S_STREAM = 3'd3, S_FIN = 3'd4;
 
-reg [2:0] state;
-reg [`ADDR_WIDTH-1:0] header_idx;
-reg [31:0] load_idx;
-reg [31:0] write_idx;
+reg [2:0] st;
+reg [`ADDR_WIDTH-1:0] hix;
+reg [`ADDR_WIDTH-1:0] oix;
+reg [31:0] ibi;
+reg [31:0] obi;
+reg [`BYTE_WIDTH-1:0] hdr [0:`BMP_HEADER_SIZE-1];
+reg [`BYTE_WIDTH-1:0] L0 [0:RB-1];
+reg [`BYTE_WIDTH-1:0] L1 [0:RB-1];
+reg [`BYTE_WIDTH-1:0] L2 [0:RB-1];
 
-reg [`BYTE_WIDTH-1:0] header_data [0:`BMP_HEADER_SIZE-1];
-reg [`BYTE_WIDTH-1:0] img_data [0:PIXEL_DATA_SIZE-1];
-reg [`BYTE_WIDTH-1:0] out_data [0:PIXEL_DATA_SIZE-1];
 
-integer xi, yi;
-integer base_idx;
-integer dx, dy;
-integer wi, wj;
+wire body_rd = (st == S_STREAM) && (ibi <= PIXEL_LAST);
+wire [31:0] wr_py_i  = ibi / RB;
+wire [31:0] wr_px_i  = (ibi / 32'd3) % `BMP_WIDTH;
+wire [31:0] wr_off_i = wr_px_i * 32'd3 + (ibi % 32'd3);
+wire [31:0] wr_sl_i  = wr_py_i % 32'd3;
+
+function [`BYTE_WIDTH-1:0] f_pix;
+    input [31:0] py, px, cch;
+    reg [31:0] ai, off;
+    reg [1:0] sl;
+    begin
+        ai = (py * `BMP_WIDTH + px) * 32'd3 + cch;
+        off = px * 32'd3 + cch[1:0];
+        sl = py % 32'd3;
+        if (body_rd && (ibi == ai))
+            f_pix = RAM_in_out;
+        else case (sl)
+            2'd0: f_pix = L0[off];
+            2'd1: f_pix = L1[off];
+            default: f_pix = L2[off];
+        endcase
+    end
+endfunction
+
+wire [31:0] ob_pix = obi / 32'd3;
+wire [31:0] ox_b = ob_pix % `BMP_WIDTH;
+wire [31:0] oy_b = ob_pix / `BMP_WIDTH;
+wire [31:0] och = obi % 32'd3;
+wire bod = (oy_b == 0) || (ox_b == 0) || (oy_b == `BMP_HEIGHT - 1) || (ox_b == `BMP_WIDTH - 1);
+wire [31:0] need_k = bod ? obi : (((oy_b + 32'd1) * `BMP_WIDTH + (ox_b + 32'd1)) * 32'd3 + 32'd2);
+wire out_ok = (st == S_STREAM) && (obi <= PIXEL_LAST) && (ibi > need_k);
+
+reg [`BYTE_WIDTH-1:0] out_val;
+integer dy, dx, wj, ui, uj, ix;
+integer sorted_pass;
+reg [`BYTE_WIDTH-1:0] wb [0:8];
+reg [`BYTE_WIDTH-1:0] wg [0:8];
+reg [`BYTE_WIDTH-1:0] wr [0:8];
 reg [10:0] sum_i, sum_j;
-integer nb_idx;
-reg isSorted;
-reg [`BYTE_WIDTH-1:0] window_b [0:8];
-reg [`BYTE_WIDTH-1:0] window_g [0:8];
-reg [`BYTE_WIDTH-1:0] window_r [0:8];
 reg [`BYTE_WIDTH-1:0] tmp;
 
-always @(posedge clk or negedge rst_n) begin
-    if(!rst_n) begin
-        state <= IDLE;
-        header_idx <= 0;
-        load_idx <= 0;
-        write_idx <= 0;
-        done <= 1'b0;
-    end else begin
-        case(state)
-            IDLE: begin
-                done <= 1'b0;
-                if(start) begin
-                    header_idx <= 0;
-                    state <= COPY_HEADER;
+always @(*) begin
+    out_val = 0;
+    for (ix = 0; ix < 9; ix = ix + 1) begin
+        wb[ix] = 8'd0;
+        wg[ix] = 8'd0;
+        wr[ix] = 8'd0;
+    end
+    if (st == S_STREAM && obi <= PIXEL_LAST && out_ok) begin
+        if (bod) begin
+            out_val = f_pix(oy_b, ox_b, och);
+        end else begin
+            wj = 0;
+            for (dy = -1; dy <= 1; dy = dy + 1) begin
+                for (dx = -1; dx <= 1; dx = dx + 1) begin
+                    wb[wj] = f_pix(oy_b + dy, ox_b + dx, 32'd0);
+                    wg[wj] = f_pix(oy_b + dy, ox_b + dx, 32'd1);
+                    wr[wj] = f_pix(oy_b + dy, ox_b + dx, 32'd2);
+                    wj = wj + 1;
                 end
             end
-            COPY_HEADER: begin
-                header_data[header_idx] <= RAM_in_out;
-                if(header_idx == `BMP_HEADER_SIZE - 1) begin
-                    load_idx <= 0;
-                    state <= LOAD_PIXELS;
-                end else begin
-                    header_idx <= header_idx + 1;
-                end
-            end
-            LOAD_PIXELS: begin
-                img_data[load_idx] <= RAM_in_out;
-                if(load_idx == PIXEL_DATA_SIZE - 1) begin
-                    state <= PROCESS;
-                end else begin
-                    load_idx <= load_idx + 1;
-                end
-            end
-            PROCESS: begin
-                for(yi = 0; yi < `BMP_HEIGHT; yi = yi + 1) begin
-                    for(xi = 0; xi < `BMP_WIDTH; xi = xi + 1) begin
-                        base_idx = (yi * `BMP_WIDTH + xi) * 3;
-                        if(yi == 0 || xi == 0 || yi == `BMP_HEIGHT - 1 || xi == `BMP_WIDTH - 1) begin
-                            out_data[base_idx] = img_data[base_idx];
-                            out_data[base_idx + 1] = img_data[base_idx + 1];
-                            out_data[base_idx + 2] = img_data[base_idx + 2];
-                        end else begin
-                            // Collect window
-                            wi = 0;
-                            for(dy = -1; dy <= 1; dy = dy + 1) begin
-                                for(dx = -1; dx <= 1; dx = dx + 1) begin
-                                    nb_idx = ((yi + dy) * `BMP_WIDTH + (xi + dx)) * 3;
-                                    window_b[wi] = img_data[nb_idx];
-                                    window_g[wi] = img_data[nb_idx + 1];
-                                    window_r[wi] = img_data[nb_idx + 2];
-                                    wi = wi + 1;
-                                end
-                            end
-                            // Bubble sort by sum
-                            begin : sort_block
-                                for(wi = 0; wi < 9; wi = wi + 1) begin
-                                    isSorted = 1'b1;
-                                    for(wj = wi + 1; wj < 9; wj = wj + 1) begin
-                                        sum_i = {3'b0, window_b[wi]} + {3'b0, window_g[wi]} + {3'b0, window_r[wi]};
-                                        sum_j = {3'b0, window_b[wj]} + {3'b0, window_g[wj]} + {3'b0, window_r[wj]};
-                                        if(sum_i > sum_j) begin
-                                            isSorted = 1'b0;
-                                            tmp = window_b[wi]; window_b[wi] = window_b[wj]; window_b[wj] = tmp;
-                                            tmp = window_g[wi]; window_g[wi] = window_g[wj]; window_g[wj] = tmp;
-                                            tmp = window_r[wi]; window_r[wi] = window_r[wj]; window_r[wj] = tmp;
-                                        end
-                                    end
-                                    if(isSorted)
-                                        disable sort_block;
-                                end
-                            end
-                            out_data[base_idx] = window_b[4];
-                            out_data[base_idx + 1] = window_g[4];
-                            out_data[base_idx + 2] = window_r[4];
-                        end
+            ui = 0;
+            while (ui < 9) begin
+                sorted_pass = 1;
+                for (uj = ui + 1; uj < 9; uj = uj + 1) begin
+                    sum_i = {3'd0, wb[ui]} + {3'd0, wg[ui]} + {3'd0, wr[ui]};
+                    sum_j = {3'd0, wb[uj]} + {3'd0, wg[uj]} + {3'd0, wr[uj]};
+                    if (sum_i > sum_j) begin
+                        sorted_pass = 0;
+                        tmp = wb[ui]; wb[ui] = wb[uj]; wb[uj] = tmp;
+                        tmp = wg[ui]; wg[ui] = wg[uj]; wg[uj] = tmp;
+                        tmp = wr[ui]; wr[ui] = wr[uj]; wr[uj] = tmp;
                     end
                 end
-                write_idx <= 0;
-                state <= WRITE_HEAD;
+                if (sorted_pass)
+                    ui = 9;
+                else
+                    ui = ui + 1;
             end
-            WRITE_HEAD: begin
-                if(write_idx == `BMP_HEADER_SIZE - 1) begin
-                    write_idx <= 0;
-                    state <= WRITE_DATA;
-                end else begin
-                    write_idx <= write_idx + 1;
+            if (och == 32'd0)
+                out_val = wb[4];
+            else if (och == 32'd1)
+                out_val = wg[4];
+            else
+                out_val = wr[4];
+        end
+    end
+end
+
+wire str_done = (st == S_STREAM) && (ibi > PIXEL_LAST) && (obi > PIXEL_LAST);
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        st <= S_IDLE;
+        hix <= 0;
+        oix <= 0;
+        ibi <= 0;
+        obi <= 0;
+        done <= 1'b0;
+    end else begin
+        case (st)
+            S_IDLE: begin
+                done <= 1'b0;
+                if (start) begin
+                    hix <= 0;
+                    st <= S_HDR_LD;
                 end
             end
-            WRITE_DATA: begin
-                if(write_idx == PIXEL_DATA_SIZE - 1) begin
+            S_HDR_LD: begin
+                hdr[hix] <= RAM_in_out;
+                if (hix == HDR_LAST) begin
+                    oix <= 0;
+                    ibi <= 0;
+                    obi <= 0;
+                    st <= S_HDR_OUT;
+                end else
+                    hix <= hix + 1'b1;
+            end
+            S_HDR_OUT: begin
+                if (oix == HDR_LAST)
+                    st <= S_STREAM;
+                oix <= (oix == HDR_LAST) ? oix : (oix + 1'b1);
+            end
+            S_STREAM: begin
+                if (str_done) begin
                     done <= 1'b1;
-                    state <= FINISH;
+                    st <= S_FIN;
                 end else begin
-                    write_idx <= write_idx + 1;
+                    if (body_rd) begin
+                        case (wr_sl_i)
+                            32'd0: L0[wr_off_i] <= RAM_in_out;
+                            32'd1: L1[wr_off_i] <= RAM_in_out;
+                            default: L2[wr_off_i] <= RAM_in_out;
+                        endcase
+                        ibi <= ibi + 32'd1;
+                    end
+                    if (out_ok)
+                        obi <= obi + 32'd1;
                 end
             end
-            FINISH: begin
-                done <= 1'b1;
-            end
-            default: state <= IDLE;
+            S_FIN: done <= 1'b1;
+            default: st <= S_IDLE;
         endcase
     end
 end
@@ -169,25 +187,26 @@ always @(*) begin
     RAM_out_wen = 1'b0;
     RAM_out_addr = 0;
     RAM_out_in = 0;
-
-    case(state)
-        COPY_HEADER: begin
+    case (st)
+        S_HDR_LD: begin
             RAM_in_ren = 1'b1;
-            RAM_in_addr = header_idx;
+            RAM_in_addr = hix;
         end
-        LOAD_PIXELS: begin
-            RAM_in_ren = 1'b1;
-            RAM_in_addr = `BMP_HEADER_SIZE + load_idx[`ADDR_WIDTH-1:0];
-        end
-        WRITE_HEAD: begin
+        S_HDR_OUT: begin
             RAM_out_wen = 1'b1;
-            RAM_out_addr = write_idx[`ADDR_WIDTH-1:0];
-            RAM_out_in = header_data[write_idx];
+            RAM_out_addr = oix;
+            RAM_out_in = hdr[oix];
         end
-        WRITE_DATA: begin
-            RAM_out_wen = 1'b1;
-            RAM_out_addr = `BMP_HEADER_SIZE + write_idx[`ADDR_WIDTH-1:0];
-            RAM_out_in = out_data[write_idx];
+        S_STREAM: begin
+            if (ibi <= PIXEL_LAST) begin
+                RAM_in_ren = 1'b1;
+                RAM_in_addr = `BMP_HEADER_SIZE + ibi[`ADDR_WIDTH-1:0];
+            end
+            if (out_ok) begin
+                RAM_out_wen = 1'b1;
+                RAM_out_addr = `BMP_HEADER_SIZE + obi[`ADDR_WIDTH-1:0];
+                RAM_out_in = out_val;
+            end
         end
         default: begin
             RAM_in_ren = 1'b0;

@@ -21,11 +21,22 @@ BMPImage *gaussian_blur(BMPImage *src_img)
         {1, 2, 1}
     };
 
-    for(LWORD y = 0; y < height; y++)
+    LWORD y;
+    LWORD x;
+    LWORD out_idx;
+    LWORD ni;
+    int ky;
+    int kx;
+    int sum_b;
+    int sum_g;
+    int sum_r;
+    int w;
+
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
-            LWORD out_idx = y * row_size + x * 3;
+            out_idx = y * row_size + x * 3;
             if(y == 0 || y + 1 >= height || x == 0 || x + 1 >= width)
             {
                 out_img->p08Data[out_idx] = src_img->p08Data[out_idx];
@@ -33,13 +44,15 @@ BMPImage *gaussian_blur(BMPImage *src_img)
                 out_img->p08Data[out_idx + 2] = src_img->p08Data[out_idx + 2];
                 continue;
             }
-            int sum_b = 0, sum_g = 0, sum_r = 0;
-            for(int ky = -1; ky <= 1; ky++)
+            sum_b = 0;
+            sum_g = 0;
+            sum_r = 0;
+            for(ky = -1; ky <= 1; ky++)
             {
-                for(int kx = -1; kx <= 1; kx++)
+                for(kx = -1; kx <= 1; kx++)
                 {
-                    LWORD ni = (y + ky) * row_size + (x + kx) * 3;
-                    int w = kernel[ky + 1][kx + 1];
+                    ni = (LWORD)((long)y + ky) * row_size + (LWORD)((long)x + kx) * 3;
+                    w = kernel[ky + 1][kx + 1];
                     sum_b += (int)src_img->p08Data[ni] * w;
                     sum_g += (int)src_img->p08Data[ni + 1] * w;
                     sum_r += (int)src_img->p08Data[ni + 2] * w;

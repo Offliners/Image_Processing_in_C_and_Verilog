@@ -1,26 +1,15 @@
 `include "DEFINE.vh"
 
+// Pass1: histogram of B channel. Output fixed header + bar chart body (no full img/out arrays).
+
 module IMAGE_HISTOGRAM(
-    // Input signals
-    clk,
-    rst_n,
-    start,
-    RAM_in_out,
-
-    // Output signals
-    RAM_in_ren,
-    RAM_in_addr,
-    RAM_out_wen,
-    RAM_out_in,
-    RAM_out_addr,
-    done
+    clk, rst_n, start, RAM_in_out,
+    RAM_in_ren, RAM_in_addr, RAM_out_wen, RAM_out_in, RAM_out_addr, done
 );
-
 input clk;
 input rst_n;
 input start;
 input [`BYTE_WIDTH-1:0] RAM_in_out;
-
 output reg RAM_in_ren;
 output reg [`ADDR_WIDTH-1:0] RAM_in_addr;
 output reg RAM_out_wen;
@@ -28,179 +17,109 @@ output reg [`BYTE_WIDTH-1:0] RAM_out_in;
 output reg [`ADDR_WIDTH-1:0] RAM_out_addr;
 output reg done;
 
-localparam [2:0] IDLE        = 3'b000,
-                 COPY_HEADER = 3'b001,
-                 LOAD_PIXELS = 3'b010,
-                 PROCESS     = 3'b011,
-                 WRITE_HEAD  = 3'b100,
-                 WRITE_DATA  = 3'b101,
-                 FINISH      = 3'b110;
+localparam [31:0] PIXEL_DATA_SIZE = (`BMP_TOTAL_SIZE - `BMP_HEADER_SIZE);
+localparam [`ADDR_WIDTH-1:0] HDR_LAST = `BMP_HEADER_SIZE - 1;
+localparam [31:0] PIXEL_LAST = PIXEL_DATA_SIZE - 1;
 
-localparam integer PIXEL_DATA_SIZE = (`BMP_TOTAL_SIZE - `BMP_HEADER_SIZE);
+localparam [2:0] S_IDLE = 3'd0, S_HDR_LD = 3'd1, S_PASS1 = 3'd2,
+    S_BUILD = 3'd3, S_HOUT = 3'd4, S_BOUT = 3'd5, S_FIN = 3'd6;
 
-reg [2:0] state;
-reg [`ADDR_WIDTH-1:0] header_idx;
-reg [31:0] load_idx;
-reg [31:0] write_idx;
+reg [2:0] st;
+reg [`ADDR_WIDTH-1:0] hix;
+reg [31:0] ibi;
+reg [31:0] obi;
+reg [31:0] hist_mem [0:255];
+reg [31:0] max_c;
+reg [7:0] gh [0:53];
 
-reg [`BYTE_WIDTH-1:0] header_data [0:`BMP_HEADER_SIZE-1];
-reg [`BYTE_WIDTH-1:0] img_data [0:PIXEL_DATA_SIZE-1];
-reg [`BYTE_WIDTH-1:0] out_data [0:PIXEL_DATA_SIZE-1];
+integer hi;
+integer max_t;
 
-integer hist [0:255];
-integer i;
-integer x, y;
-integer idx;
-integer max_count;
-integer bar_height;
+initial begin
+    gh[0]=8'h42; gh[1]=8'h4D; gh[2]=8'h36; gh[3]=8'h00; gh[4]=8'h03; gh[5]=8'h00;
+    gh[6]=8'h00; gh[7]=8'h00; gh[8]=8'h00; gh[9]=8'h00; gh[10]=8'h36; gh[11]=8'h00;
+    gh[12]=8'h00; gh[13]=8'h00; gh[14]=8'h28; gh[15]=8'h00; gh[16]=8'h00; gh[17]=8'h00;
+    gh[18]=8'h00; gh[19]=8'h01; gh[20]=8'h00; gh[21]=8'h00; gh[22]=8'h00; gh[23]=8'h01;
+    gh[24]=8'h00; gh[25]=8'h00; gh[26]=8'h01; gh[27]=8'h00; gh[28]=8'h18; gh[29]=8'h00;
+    gh[30]=8'h00; gh[31]=8'h00; gh[32]=8'h00; gh[33]=8'h00; gh[34]=8'h00; gh[35]=8'h00;
+    gh[36]=8'h03; gh[37]=8'h00; gh[38]=8'h00; gh[39]=8'h00; gh[40]=8'h00; gh[41]=8'h00;
+    gh[42]=8'h00; gh[43]=8'h00; gh[44]=8'h00; gh[45]=8'h00; gh[46]=8'h00; gh[47]=8'h00;
+    gh[48]=8'h00; gh[49]=8'h00; gh[50]=8'h00; gh[51]=8'h00; gh[52]=8'h00; gh[53]=8'h00;
+end
+
+wire [31:0] p2 = obi / 32'd3;
+wire [31:0] x_im = p2 % `BMP_WIDTH;
+wire [31:0] y_im = p2 / `BMP_WIDTH;
+wire [31:0] bar_h = (max_c == 0) ? 0 : ((hist_mem[x_im] * 32'd255) / max_c);
+wire [31:0] from_bot = `BMP_HEIGHT - 32'd1 - y_im;
+wire is_blk = (from_bot <= bar_h);
+reg [7:0] obv;
+
+always @(*) begin
+    obv = is_blk ? 8'h00 : 8'hFF;
+end
 
 always @(posedge clk or negedge rst_n) begin
-    if(!rst_n) begin
-        state <= IDLE;
-        header_idx <= 0;
-        load_idx <= 0;
-        write_idx <= 0;
+    if (!rst_n) begin
+        st <= S_IDLE;
+        hix <= 0;
+        ibi <= 0;
+        obi <= 0;
+        max_c <= 0;
         done <= 1'b0;
     end else begin
-        case(state)
-            IDLE: begin
+        case (st)
+            S_IDLE: begin
                 done <= 1'b0;
-                if(start) begin
-                    header_idx <= 0;
-                    state <= COPY_HEADER;
+                if (start) begin
+                    for (hi = 0; hi < 256; hi = hi + 1)
+                        hist_mem[hi] <= 0;
+                    hix <= 0;
+                    st <= S_HDR_LD;
                 end
             end
-            COPY_HEADER: begin
-                header_data[header_idx] <= RAM_in_out;
-                if(header_idx == `BMP_HEADER_SIZE - 1) begin
-                    load_idx <= 0;
-                    state <= LOAD_PIXELS;
-                end else begin
-                    header_idx <= header_idx + 1;
-                end
+            S_HDR_LD: begin
+                if (hix == HDR_LAST) begin
+                    ibi <= 0;
+                    st <= S_PASS1;
+                end else
+                    hix <= hix + 1'b1;
             end
-            LOAD_PIXELS: begin
-                img_data[load_idx] <= RAM_in_out;
-                if(load_idx == PIXEL_DATA_SIZE - 1) begin
-                    state <= PROCESS;
-                end else begin
-                    load_idx <= load_idx + 1;
-                end
-            end
-            PROCESS: begin
-                for(i = 0; i < 256; i = i + 1)
-                    hist[i] = 0;
-
-                /* Grayscale 24-bit BMP: B=G=R per pixel; use B channel */
-                for(y = 0; y < `BMP_HEIGHT; y = y + 1) begin
-                    for(x = 0; x < `BMP_WIDTH; x = x + 1) begin
-                        idx = (y * `BMP_WIDTH + x) * 3;
-                        hist[img_data[idx]] = hist[img_data[idx]] + 1;
+            S_PASS1: begin
+                if (ibi <= PIXEL_LAST) begin
+                    if ((ibi % 32'd3) == 0) begin
+                        hist_mem[RAM_in_out] <= hist_mem[RAM_in_out] + 32'd1;
                     end
-                end
-
-                max_count = 0;
-                for(i = 0; i < 256; i = i + 1) begin
-                    if(hist[i] > max_count)
-                        max_count = hist[i];
-                end
-
-                // Build BMP header for 256x256, 24-bit
-                header_data[0]  = 8'h42;
-                header_data[1]  = 8'h4D;
-                header_data[2]  = 8'h36;
-                header_data[3]  = 8'h00;
-                header_data[4]  = 8'h03;
-                header_data[5]  = 8'h00;
-                header_data[6]  = 8'h00;
-                header_data[7]  = 8'h00;
-                header_data[8]  = 8'h00;
-                header_data[9]  = 8'h00;
-                header_data[10] = 8'h36;
-                header_data[11] = 8'h00;
-                header_data[12] = 8'h00;
-                header_data[13] = 8'h00;
-                header_data[14] = 8'h28;
-                header_data[15] = 8'h00;
-                header_data[16] = 8'h00;
-                header_data[17] = 8'h00;
-                header_data[18] = 8'h00;
-                header_data[19] = 8'h01;
-                header_data[20] = 8'h00;
-                header_data[21] = 8'h00;
-                header_data[22] = 8'h00;
-                header_data[23] = 8'h01;
-                header_data[24] = 8'h00;
-                header_data[25] = 8'h00;
-                header_data[26] = 8'h01;
-                header_data[27] = 8'h00;
-                header_data[28] = 8'h18;
-                header_data[29] = 8'h00;
-                header_data[30] = 8'h00;
-                header_data[31] = 8'h00;
-                header_data[32] = 8'h00;
-                header_data[33] = 8'h00;
-                header_data[34] = 8'h00;
-                header_data[35] = 8'h00;
-                header_data[36] = 8'h03;
-                header_data[37] = 8'h00;
-                header_data[38] = 8'h00;
-                header_data[39] = 8'h00;
-                header_data[40] = 8'h00;
-                header_data[41] = 8'h00;
-                header_data[42] = 8'h00;
-                header_data[43] = 8'h00;
-                header_data[44] = 8'h00;
-                header_data[45] = 8'h00;
-                header_data[46] = 8'h00;
-                header_data[47] = 8'h00;
-                header_data[48] = 8'h00;
-                header_data[49] = 8'h00;
-                header_data[50] = 8'h00;
-                header_data[51] = 8'h00;
-                header_data[52] = 8'h00;
-                header_data[53] = 8'h00;
-
-                for(i = 0; i < PIXEL_DATA_SIZE; i = i + 1)
-                    out_data[i] = 8'hFF;
-
-                for(x = 0; x < 256; x = x + 1) begin
-                    if(max_count == 0)
-                        bar_height = 0;
-                    else
-                        bar_height = (hist[x] * 255) / max_count;
-
-                    for(y = 0; y <= bar_height; y = y + 1) begin
-                        idx = ((`BMP_HEIGHT - 1 - y) * `BMP_WIDTH + x) * 3;
-                        out_data[idx] = 8'h00;
-                        out_data[idx + 1] = 8'h00;
-                        out_data[idx + 2] = 8'h00;
-                    end
-                end
-
-                write_idx <= 0;
-                state <= WRITE_HEAD;
+                    ibi <= ibi + 32'd1;
+                end else
+                    st <= S_BUILD;
             end
-            WRITE_HEAD: begin
-                if(write_idx == `BMP_HEADER_SIZE - 1) begin
-                    write_idx <= 0;
-                    state <= WRITE_DATA;
-                end else begin
-                    write_idx <= write_idx + 1;
+            S_BUILD: begin
+                max_t = 0;
+                for (hi = 0; hi < 256; hi = hi + 1) begin
+                    if (hist_mem[hi] > max_t)
+                        max_t = hist_mem[hi];
                 end
+                max_c <= max_t;
+                obi <= 0;
+                st <= S_HOUT;
             end
-            WRITE_DATA: begin
-                if(write_idx == PIXEL_DATA_SIZE - 1) begin
+            S_HOUT: begin
+                if (obi == HDR_LAST) begin
+                    obi <= 0;
+                    st <= S_BOUT;
+                end else
+                    obi <= obi + 32'd1;
+            end
+            S_BOUT: begin
+                if (obi == PIXEL_LAST) begin
                     done <= 1'b1;
-                    state <= FINISH;
-                end else begin
-                    write_idx <= write_idx + 1;
-                end
+                    st <= S_FIN;
+                end else
+                    obi <= obi + 32'd1;
             end
-            FINISH: begin
-                done <= 1'b1;
-            end
-            default: state <= IDLE;
+            S_FIN: done <= 1'b1;
+            default: st <= S_IDLE;
         endcase
     end
 end
@@ -211,25 +130,26 @@ always @(*) begin
     RAM_out_wen = 1'b0;
     RAM_out_addr = 0;
     RAM_out_in = 0;
-
-    case(state)
-        COPY_HEADER: begin
+    case (st)
+        S_HDR_LD: begin
             RAM_in_ren = 1'b1;
-            RAM_in_addr = header_idx;
+            RAM_in_addr = hix;
         end
-        LOAD_PIXELS: begin
-            RAM_in_ren = 1'b1;
-            RAM_in_addr = `BMP_HEADER_SIZE + load_idx[`ADDR_WIDTH-1:0];
+        S_PASS1: begin
+            if (ibi <= PIXEL_LAST) begin
+                RAM_in_ren = 1'b1;
+                RAM_in_addr = `BMP_HEADER_SIZE + ibi[`ADDR_WIDTH-1:0];
+            end
         end
-        WRITE_HEAD: begin
+        S_HOUT: begin
             RAM_out_wen = 1'b1;
-            RAM_out_addr = write_idx[`ADDR_WIDTH-1:0];
-            RAM_out_in = header_data[write_idx];
+            RAM_out_addr = obi[`ADDR_WIDTH-1:0];
+            RAM_out_in = gh[obi];
         end
-        WRITE_DATA: begin
+        S_BOUT: begin
             RAM_out_wen = 1'b1;
-            RAM_out_addr = `BMP_HEADER_SIZE + write_idx[`ADDR_WIDTH-1:0];
-            RAM_out_in = out_data[write_idx];
+            RAM_out_addr = `BMP_HEADER_SIZE + obi[`ADDR_WIDTH-1:0];
+            RAM_out_in = obv;
         end
         default: begin
             RAM_in_ren = 1'b0;

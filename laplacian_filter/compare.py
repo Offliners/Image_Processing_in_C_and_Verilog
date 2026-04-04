@@ -14,7 +14,7 @@ def parse_args() -> Namespace:
     parser.add_argument(
         "-c",
         type=str,
-        default="./C/output.bmp",
+        default="./output.bmp",
         help="Path to BMP image processed by C"
     )
 

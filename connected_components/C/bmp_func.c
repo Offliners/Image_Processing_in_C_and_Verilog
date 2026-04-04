@@ -21,9 +21,11 @@ static BYTE *create_gray_buffer(const BMPImage *src_img)
     if(!gray)
         return NULL;
 
-    for(LWORD y = 0; y < height; y++)
+    LWORD y;
+    LWORD x;
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             LWORD idx = y * row_size + x * 3;
             BYTE blue = src_img->p08Data[idx];
@@ -45,6 +47,9 @@ BMPImage *connected_components(BMPImage *src_img, BYTE threshold)
     LWORD height = src_img->header.stBMPInfoHeader.u32ImageHeight;
     LWORD row_size = get_image_row_size_bytes(&src_img->header);
     LWORD total = width * height;
+    LWORD i;
+    LWORD y;
+    LWORD x;
 
     BYTE *gray = create_gray_buffer(src_img);
     if(!gray)
@@ -56,7 +61,7 @@ BMPImage *connected_components(BMPImage *src_img, BYTE threshold)
         free(gray);
         return NULL;
     }
-    for(LWORD i = 0; i < total; i++)
+    for(i = 0; i < total; i++)
         binary[i] = (gray[i] > threshold) ? 1 : 0;
 
     int *labels = (int*)calloc(total, sizeof(int));
@@ -73,9 +78,9 @@ BMPImage *connected_components(BMPImage *src_img, BYTE threshold)
     }
 
     int label = 0;
-    for(LWORD y = 0; y < height; y++)
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             LWORD idx = y * width + x;
             if(binary[idx] && labels[idx] == 0)
@@ -155,9 +160,9 @@ BMPImage *connected_components(BMPImage *src_img, BYTE threshold)
     }
     memset(out_img->p08Data, 0, get_image_size_by_bytes(&out_img->header));
 
-    for(LWORD y = 0; y < height; y++)
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             LWORD idx = y * width + x;
             BYTE value = 0;

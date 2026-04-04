@@ -14,9 +14,8 @@ $ ./bgr2gray.o ../lena256.bmp
 
 # RTL
 $ cd ./bgr_to_gray/RTL
-$ make check
-$ make simulate
-$ make wave
+$ make ivl_rtl
+$ make gtk_wave
 
 # Compare C vs RTL
 $ cd ./bgr_to_gray

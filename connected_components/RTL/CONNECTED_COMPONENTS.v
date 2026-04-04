@@ -1,26 +1,16 @@
 `include "DEFINE.vh"
 
+// bin_mem[]: gray > threshold (same weights as C). BFS labeling: one queue pop per states
+// S_BFSPOP..S_BFS_NB3 chain (<= only in clocked always; temps via wires / second always @(*)).
+
 module CONNECTED_COMPONENTS(
-    // Input signals
-    clk,
-    rst_n,
-    start,
-    RAM_in_out,
-
-    // Output signals
-    RAM_in_ren,
-    RAM_in_addr,
-    RAM_out_wen,
-    RAM_out_in,
-    RAM_out_addr,
-    done
+    clk, rst_n, start, RAM_in_out,
+    RAM_in_ren, RAM_in_addr, RAM_out_wen, RAM_out_in, RAM_out_addr, done
 );
-
 input clk;
 input rst_n;
 input start;
 input [`BYTE_WIDTH-1:0] RAM_in_out;
-
 output reg RAM_in_ren;
 output reg [`ADDR_WIDTH-1:0] RAM_in_addr;
 output reg RAM_out_wen;
@@ -28,210 +18,231 @@ output reg [`BYTE_WIDTH-1:0] RAM_out_in;
 output reg [`ADDR_WIDTH-1:0] RAM_out_addr;
 output reg done;
 
-localparam [2:0] IDLE        = 3'b000,
-                 COPY_HEADER = 3'b001,
-                 LOAD_PIXELS = 3'b010,
-                 PROCESS     = 3'b011,
-                 WRITE_HEAD  = 3'b100,
-                 WRITE_DATA  = 3'b101,
-                 FINISH      = 3'b110;
+localparam [31:0] PIXEL_DATA_SIZE = (`BMP_TOTAL_SIZE - `BMP_HEADER_SIZE);
+localparam [`ADDR_WIDTH-1:0] HDR_LAST = `BMP_HEADER_SIZE - 1;
+localparam [31:0] PIXEL_LAST = PIXEL_DATA_SIZE - 1;
 
-localparam integer PIXEL_DATA_SIZE = (`BMP_TOTAL_SIZE - `BMP_HEADER_SIZE);
+localparam [3:0] S_IDLE      = 4'd0;
+localparam [3:0] S_HDR_LD    = 4'd1;
+localparam [3:0] S_LOAD      = 4'd2;
+localparam [3:0] S_CLR       = 4'd3;
+localparam [3:0] S_BFS_SCAN  = 4'd4;
+localparam [3:0] S_BFSPOP    = 4'd5;
+localparam [3:0] S_BFS_NB0   = 4'd6;
+localparam [3:0] S_BFS_NB1   = 4'd7;
+localparam [3:0] S_BFS_NB2   = 4'd8;
+localparam [3:0] S_BFS_NB3   = 4'd9;
+localparam [3:0] S_WRITE_H   = 4'd10;
+localparam [3:0] S_WRITE_B   = 4'd11;
+localparam [3:0] S_FIN       = 4'd12;
 
-reg [2:0] state;
-reg [`ADDR_WIDTH-1:0] header_idx;
-reg [31:0] load_idx;
-reg [31:0] write_idx;
+reg [3:0] st;
+reg [`ADDR_WIDTH-1:0] hix;
+reg [31:0] ldx;
+reg [31:0] wdx;
+reg [31:0] scan_i;
+reg [31:0] ci;
+reg [31:0] label_count;
+reg [`BYTE_WIDTH-1:0] hdr [0:`BMP_HEADER_SIZE-1];
+reg [`BYTE_WIDTH-1:0] bin_mem [0:`BMP_PIXEL_COUNT-1];
+reg [`BYTE_WIDTH-1:0] b_hold, g_hold;
 
-reg [`BYTE_WIDTH-1:0] header_data [0:`BMP_HEADER_SIZE-1];
-reg [`BYTE_WIDTH-1:0] img_data [0:PIXEL_DATA_SIZE-1];
-reg [`BYTE_WIDTH-1:0] out_data [0:PIXEL_DATA_SIZE-1];
-reg [`BYTE_WIDTH-1:0] gray_data [0:`BMP_PIXEL_COUNT-1];
-reg [`BYTE_WIDTH-1:0] binary_data [0:`BMP_PIXEL_COUNT-1];
-integer label_data [0:`BMP_PIXEL_COUNT-1];
-integer queue_x [0:`BMP_PIXEL_COUNT-1];
-integer queue_y [0:`BMP_PIXEL_COUNT-1];
+reg [31:0] label_r [0:`BMP_PIXEL_COUNT-1];
+reg [31:0] qx_w [0:`BMP_PIXEL_COUNT-1];
+reg [31:0] qy_w [0:`BMP_PIXEL_COUNT-1];
 
-integer i, x, y;
-integer idx;
-integer pidx;
-integer label_count;
-integer head, tail;
-integer cx, cy;
-integer value;
+reg [31:0] head_q;
+reg [31:0] tail_q;
+reg [31:0] pop_cx;
+reg [31:0] pop_cy;
+reg [31:0] cur_lbl_r;
 
-/* Grayscale input (B=G=R) after BGR2GRAY */
+wire [15:0] gray_pix = (b_hold * 16'd30 + g_hold * 16'd150 + RAM_in_out * 16'd76) >> 8;
+
+// Neighbor linear indices (mux avoids underflow on unused side)
+wire [31:0] n0_idx = (pop_cx > 0) ? (pop_cy * 32'd`BMP_WIDTH + pop_cx - 32'd1) : 32'd0;
+wire [31:0] n1_idx = (pop_cx + 1 < `BMP_WIDTH) ? (pop_cy * 32'd`BMP_WIDTH + pop_cx + 32'd1) : 32'd0;
+wire [31:0] n2_idx = (pop_cy > 0) ? ((pop_cy - 32'd1) * 32'd`BMP_WIDTH + pop_cx) : 32'd0;
+wire [31:0] n3_idx = (pop_cy + 1 < `BMP_HEIGHT) ? ((pop_cy + 32'd1) * 32'd`BMP_WIDTH + pop_cx) : 32'd0;
+
+// Write-back pixel color (same mapping as original C/RTL)
+wire [31:0] wr_pix_lbl = label_r[wdx / 32'd3];
+wire [31:0] wr_pix_mul = (wr_pix_lbl * 32'd37) & 32'd255;
+wire [31:0] wr_pix_out = (wr_pix_lbl == 0) ? 32'd0 :
+                         (wr_pix_mul == 0) ? 32'd1 : wr_pix_mul;
+
 always @(posedge clk or negedge rst_n) begin
-    if(!rst_n) begin
-        state <= IDLE;
-        header_idx <= 0;
-        load_idx <= 0;
-        write_idx <= 0;
+    if (!rst_n) begin
+        st <= S_IDLE;
+        hix <= 0;
+        ldx <= 0;
+        wdx <= 0;
+        scan_i <= 0;
+        ci <= 0;
+        label_count <= 0;
+        b_hold <= 0;
+        g_hold <= 0;
         done <= 1'b0;
+        head_q <= 0;
+        tail_q <= 0;
+        pop_cx <= 0;
+        pop_cy <= 0;
+        cur_lbl_r <= 0;
     end else begin
-        case(state)
-            IDLE: begin
+        case (st)
+            S_IDLE: begin
                 done <= 1'b0;
-                if(start) begin
-                    header_idx <= 0;
-                    state <= COPY_HEADER;
+                if (start) begin
+                    hix <= 0;
+                    st <= S_HDR_LD;
                 end
             end
-            COPY_HEADER: begin
-                header_data[header_idx] <= RAM_in_out;
-                if(header_idx == `BMP_HEADER_SIZE - 1) begin
-                    load_idx <= 0;
-                    state <= LOAD_PIXELS;
+            S_HDR_LD: begin
+                hdr[hix] <= RAM_in_out;
+                if (hix == HDR_LAST) begin
+                    ldx <= 0;
+                    st <= S_LOAD;
+                end else
+                    hix <= hix + 1'b1;
+            end
+            S_LOAD: begin
+                if ((ldx % 32'd3) == 0)
+                    b_hold <= RAM_in_out;
+                if ((ldx % 32'd3) == 1)
+                    g_hold <= RAM_in_out;
+                if ((ldx % 32'd3) == 2)
+                    bin_mem[ldx / 32'd3] <= (gray_pix > `BIN_THRESHOLD) ? 8'd1 : 8'd0;
+                if (ldx == PIXEL_LAST) begin
+                    ci <= 0;
+                    st <= S_CLR;
+                end else
+                    ldx <= ldx + 32'd1;
+            end
+            S_CLR: begin
+                label_r[ci] <= 0;
+                if (ci == `BMP_PIXEL_COUNT - 1) begin
+                    scan_i <= 0;
+                    label_count <= 0;
+                    st <= S_BFS_SCAN;
+                end else
+                    ci <= ci + 32'd1;
+            end
+            S_BFS_SCAN: begin
+                if (scan_i >= `BMP_PIXEL_COUNT) begin
+                    wdx <= 0;
+                    st <= S_WRITE_H;
+                end else if (bin_mem[scan_i] != 0 && label_r[scan_i] == 0) begin
+                    label_r[scan_i] <= label_count + 32'd1;
+                    label_count <= label_count + 32'd1;
+                    cur_lbl_r <= label_count + 32'd1;
+                    head_q <= 0;
+                    tail_q <= 1;
+                    qx_w[0] <= scan_i % `BMP_WIDTH;
+                    qy_w[0] <= scan_i / `BMP_WIDTH;
+                    st <= S_BFSPOP;
+                end else
+                    scan_i <= scan_i + 32'd1;
+            end
+            S_BFSPOP: begin
+                if (head_q >= tail_q) begin
+                    scan_i <= scan_i + 32'd1;
+                    st <= S_BFS_SCAN;
                 end else begin
-                    header_idx <= header_idx + 1;
+                    pop_cx <= qx_w[head_q];
+                    pop_cy <= qy_w[head_q];
+                    head_q <= head_q + 32'd1;
+                    st <= S_BFS_NB0;
                 end
             end
-            LOAD_PIXELS: begin
-                img_data[load_idx] <= RAM_in_out;
-                if(load_idx == PIXEL_DATA_SIZE - 1) begin
-                    state <= PROCESS;
-                end else begin
-                    load_idx <= load_idx + 1;
+            S_BFS_NB0: begin
+                if (pop_cx > 0 &&
+                    bin_mem[n0_idx] != 0 &&
+                    label_r[n0_idx] == 0) begin
+                    label_r[n0_idx] <= cur_lbl_r;
+                    qx_w[tail_q] <= pop_cx - 32'd1;
+                    qy_w[tail_q] <= pop_cy;
+                    tail_q <= tail_q + 32'd1;
                 end
+                st <= S_BFS_NB1;
             end
-            PROCESS: begin
-                for(y = 0; y < `BMP_HEIGHT; y = y + 1) begin
-                    for(x = 0; x < `BMP_WIDTH; x = x + 1) begin
-                        pidx = (y * `BMP_WIDTH + x) * 3;
-                        gray_data[y * `BMP_WIDTH + x] = img_data[pidx];
-                        binary_data[y * `BMP_WIDTH + x] = (gray_data[y * `BMP_WIDTH + x] > `BIN_THRESHOLD) ? 8'd1 : 8'd0;
-                        label_data[y * `BMP_WIDTH + x] = 0;
-                    end
+            S_BFS_NB1: begin
+                if (pop_cx + 1 < `BMP_WIDTH &&
+                    bin_mem[n1_idx] != 0 &&
+                    label_r[n1_idx] == 0) begin
+                    label_r[n1_idx] <= cur_lbl_r;
+                    qx_w[tail_q] <= pop_cx + 32'd1;
+                    qy_w[tail_q] <= pop_cy;
+                    tail_q <= tail_q + 32'd1;
                 end
-
-                label_count = 0;
-                for(y = 0; y < `BMP_HEIGHT; y = y + 1) begin
-                    for(x = 0; x < `BMP_WIDTH; x = x + 1) begin
-                        idx = y * `BMP_WIDTH + x;
-                        if(binary_data[idx] != 0 && label_data[idx] == 0) begin
-                            label_count = label_count + 1;
-                            head = 0;
-                            tail = 0;
-                            queue_x[tail] = x;
-                            queue_y[tail] = y;
-                            tail = tail + 1;
-                            label_data[idx] = label_count;
-
-                            while(head < tail) begin
-                                cx = queue_x[head];
-                                cy = queue_y[head];
-                                head = head + 1;
-
-                                if(cx > 0) begin
-                                    idx = cy * `BMP_WIDTH + (cx - 1);
-                                    if(binary_data[idx] != 0 && label_data[idx] == 0) begin
-                                        label_data[idx] = label_count;
-                                        queue_x[tail] = cx - 1;
-                                        queue_y[tail] = cy;
-                                        tail = tail + 1;
-                                    end
-                                end
-                                if(cx + 1 < `BMP_WIDTH) begin
-                                    idx = cy * `BMP_WIDTH + (cx + 1);
-                                    if(binary_data[idx] != 0 && label_data[idx] == 0) begin
-                                        label_data[idx] = label_count;
-                                        queue_x[tail] = cx + 1;
-                                        queue_y[tail] = cy;
-                                        tail = tail + 1;
-                                    end
-                                end
-                                if(cy > 0) begin
-                                    idx = (cy - 1) * `BMP_WIDTH + cx;
-                                    if(binary_data[idx] != 0 && label_data[idx] == 0) begin
-                                        label_data[idx] = label_count;
-                                        queue_x[tail] = cx;
-                                        queue_y[tail] = cy - 1;
-                                        tail = tail + 1;
-                                    end
-                                end
-                                if(cy + 1 < `BMP_HEIGHT) begin
-                                    idx = (cy + 1) * `BMP_WIDTH + cx;
-                                    if(binary_data[idx] != 0 && label_data[idx] == 0) begin
-                                        label_data[idx] = label_count;
-                                        queue_x[tail] = cx;
-                                        queue_y[tail] = cy + 1;
-                                        tail = tail + 1;
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-
-                for(y = 0; y < `BMP_HEIGHT; y = y + 1) begin
-                    for(x = 0; x < `BMP_WIDTH; x = x + 1) begin
-                        idx = y * `BMP_WIDTH + x;
-                        if(label_data[idx] == 0)
-                            value = 0;
-                        else begin
-                            value = (label_data[idx] * 37) & 8'hFF;
-                            if(value == 0)
-                                value = 1;
-                        end
-                        idx = (y * `BMP_WIDTH + x) * 3;
-                        out_data[idx] = value[7:0];
-                        out_data[idx + 1] = value[7:0];
-                        out_data[idx + 2] = value[7:0];
-                    end
-                end
-
-                write_idx <= 0;
-                state <= WRITE_HEAD;
+                st <= S_BFS_NB2;
             end
-            WRITE_HEAD: begin
-                if(write_idx == `BMP_HEADER_SIZE - 1) begin
-                    write_idx <= 0;
-                    state <= WRITE_DATA;
-                end else begin
-                    write_idx <= write_idx + 1;
+            S_BFS_NB2: begin
+                if (pop_cy > 0 &&
+                    bin_mem[n2_idx] != 0 &&
+                    label_r[n2_idx] == 0) begin
+                    label_r[n2_idx] <= cur_lbl_r;
+                    qx_w[tail_q] <= pop_cx;
+                    qy_w[tail_q] <= pop_cy - 32'd1;
+                    tail_q <= tail_q + 32'd1;
                 end
+                st <= S_BFS_NB3;
             end
-            WRITE_DATA: begin
-                if(write_idx == PIXEL_DATA_SIZE - 1) begin
+            S_BFS_NB3: begin
+                if (pop_cy + 1 < `BMP_HEIGHT &&
+                    bin_mem[n3_idx] != 0 &&
+                    label_r[n3_idx] == 0) begin
+                    label_r[n3_idx] <= cur_lbl_r;
+                    qx_w[tail_q] <= pop_cx;
+                    qy_w[tail_q] <= pop_cy + 32'd1;
+                    tail_q <= tail_q + 32'd1;
+                end
+                st <= S_BFSPOP;
+            end
+            S_WRITE_H: begin
+                if (wdx == HDR_LAST) begin
+                    wdx <= 0;
+                    st <= S_WRITE_B;
+                end else
+                    wdx <= wdx + 32'd1;
+            end
+            S_WRITE_B: begin
+                if (wdx == PIXEL_LAST) begin
                     done <= 1'b1;
-                    state <= FINISH;
-                end else begin
-                    write_idx <= write_idx + 1;
-                end
+                    st <= S_FIN;
+                end else
+                    wdx <= wdx + 32'd1;
             end
-            FINISH: begin
-                done <= 1'b1;
-            end
-            default: state <= IDLE;
+            S_FIN: done <= 1'b1;
+            default: st <= S_IDLE;
         endcase
     end
 end
 
+// Output mux: combinational; outputs driven with blocking assigns (no regs declared here)
 always @(*) begin
     RAM_in_ren = 1'b0;
     RAM_in_addr = 0;
     RAM_out_wen = 1'b0;
     RAM_out_addr = 0;
     RAM_out_in = 0;
-
-    case(state)
-        COPY_HEADER: begin
+    case (st)
+        S_HDR_LD: begin
             RAM_in_ren = 1'b1;
-            RAM_in_addr = header_idx;
+            RAM_in_addr = hix;
         end
-        LOAD_PIXELS: begin
+        S_LOAD: begin
             RAM_in_ren = 1'b1;
-            RAM_in_addr = `BMP_HEADER_SIZE + load_idx[`ADDR_WIDTH-1:0];
+            RAM_in_addr = `BMP_HEADER_SIZE + ldx[`ADDR_WIDTH-1:0];
         end
-        WRITE_HEAD: begin
+        S_WRITE_H: begin
             RAM_out_wen = 1'b1;
-            RAM_out_addr = write_idx[`ADDR_WIDTH-1:0];
-            RAM_out_in = header_data[write_idx];
+            RAM_out_addr = wdx[`ADDR_WIDTH-1:0];
+            RAM_out_in = hdr[wdx];
         end
-        WRITE_DATA: begin
+        S_WRITE_B: begin
             RAM_out_wen = 1'b1;
-            RAM_out_addr = `BMP_HEADER_SIZE + write_idx[`ADDR_WIDTH-1:0];
-            RAM_out_in = out_data[write_idx];
+            RAM_out_addr = `BMP_HEADER_SIZE + wdx[`ADDR_WIDTH-1:0];
+            RAM_out_in = wr_pix_out[7:0];
         end
         default: begin
             RAM_in_ren = 1'b0;

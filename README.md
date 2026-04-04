@@ -21,6 +21,7 @@ In this repository there are some image processing algorithms implemented using 
     + [Gaussian Blur Filter](#gaussian-blur-filter)
     + [Sobel Filter](#sobel-filter)
     + [Laplacian Filter](#laplacian-filter)
+* [Quick Test](#quick-test)
 * [Image Processing Flow](#image-processing-flow)
 * [Tools](#tools)
 
@@ -228,6 +229,34 @@ Detect edges with 3x3 Laplacian operator on a grayscale image.
 
 </details>
 
+## Quick Test
+`run_all_content_tests.sh` runs, for each module in order: C build and run, RTL simulation via `RTL/Makefile` targets `ivl_rtl`, `vcs_rtl`, or `irun_rtl`, and `compare.py` when present. Place test assets under each module (e.g. `lena256.bmp`, `raw_to_bgr/lena256_rgb.raw`). If `median_filter/lena256_noise.bmp` is missing, the script tries to generate it with `add_noise.py` from `lena256.bmp`. On failure, the script prints how many steps failed and a list of them.
+
+```shell
+cd Image_Processing_in_C_and_Verilog
+
+# All modules (default RTL: Icarus, make ivl_rtl)
+./run_all_content_tests.sh
+
+# RTL with Synopsys VCS or Cadence irun
+./run_all_content_tests.sh --rtl-tool vcs
+./run_all_content_tests.sh --rtl-tool irun
+./run_all_content_tests.sh --rtl-tool=vcs
+
+# Default simulator from env; --rtl-tool on the command line overrides RTL_TOOL
+RTL_TOOL=vcs ./run_all_content_tests.sh
+
+# C only: skip RTL and compare.py
+./run_all_content_tests.sh --skip-rtl
+RUN_RTL=0 ./run_all_content_tests.sh
+
+# Single module only (directory name, e.g. median_filter)
+./run_all_content_tests.sh --only median_filter
+
+# Print usage
+./run_all_content_tests.sh --help
+```
+
 ## Image Processing Flow
 ```mermaid
 %%{
@@ -278,7 +307,21 @@ flowchart LR
 ```
 
 ## Tools
+### C Compiler
 * GNU Compiler Collection
-* Icarus Verilog
-* GTKWave
+
+### Image comparison
 * Python3
+
+### RTL simultion & Debug
+* Icarus Verilog
+* Cadence irun
+* Synopsys VCS
+* Synopsys Verdi
+* GTKWave
+
+### Synthesis and Verification
+* Synopsys Design Compile
+
+### Process
+* TSMC 0.13µm (Not provide in this repository)

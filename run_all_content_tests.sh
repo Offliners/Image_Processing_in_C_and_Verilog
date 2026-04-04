@@ -10,10 +10,14 @@
 # median_filter/lena256.bmp.
 #
 # Usage:
-#   ./run_all_content_tests.sh              # all modules (RTL can take a long time)
-#   ./run_all_content_tests.sh --skip-rtl   # C only (skips RTL and compare)
+#   ./run_all_content_tests.sh                    # all modules, RTL via Icarus (make ivl_rtl)
+#   ./run_all_content_tests.sh --rtl-tool vcs     # RTL via Synopsys VCS (make vcs_rtl)
+#   ./run_all_content_tests.sh --rtl-tool irun    # RTL via Cadence irun (make irun_rtl)
+#   ./run_all_content_tests.sh --rtl-tool=vcs     # same (GNU-style)
+#   RTL_TOOL=vcs ./run_all_content_tests.sh       # default from env; --rtl-tool on CLI overrides
+#   ./run_all_content_tests.sh --skip-rtl         # C only (skips RTL and compare)
 #   ./run_all_content_tests.sh --only median_filter
-#   RUN_RTL=0 ./run_all_content_tests.sh    # same as --skip-rtl
+#   RUN_RTL=0 ./run_all_content_tests.sh          # same as --skip-rtl
 #
 # laplacian_filter has no compare.py; C and RTL still run, comparison is skipped.
 
@@ -24,6 +28,7 @@ cd "$REPO_ROOT"
 
 SKIP_RTL=0
 ONLY=""
+RTL_TOOL="${RTL_TOOL:-iverilog}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -33,8 +38,16 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 1 ]] || { echo "error: --only requires a module directory name"; exit 2; }
       ONLY="$1"
       ;;
+    --rtl-tool)
+      shift
+      [[ $# -ge 1 ]] || { echo "error: --rtl-tool requires iverilog, vcs, or irun"; exit 2; }
+      RTL_TOOL="$1"
+      ;;
+    --rtl-tool=*)
+      RTL_TOOL="${1#*=}"
+      ;;
     -h|--help)
-      sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -44,6 +57,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "${RUN_RTL:-}" && "$RUN_RTL" == "0" ]] && SKIP_RTL=1
+
+case "$RTL_TOOL" in
+  iverilog|vcs|irun) ;;
+  *)
+    echo "error: RTL_TOOL must be iverilog, vcs, or irun (got: $RTL_TOOL)"
+    exit 2
+    ;;
+esac
 
 if [[ -n "$ONLY" && ! -d "$REPO_ROOT/$ONLY" ]]; then
   echo "error: module directory not found: $ONLY"
@@ -62,13 +83,31 @@ need_file() {
 }
 
 failures=0
+FAIL_LIST=()
 log() { printf '\n\033[1;36m==>\033[0m %s\n' "$*"; }
+
+record_fail() {
+  local msg="$1"
+  failures=$((failures + 1))
+  FAIL_LIST+=("$msg")
+  echo "FAIL: $msg"
+}
+
+rtl_make_target() {
+  case "$RTL_TOOL" in
+    iverilog) echo ivl_rtl ;;
+    vcs)      echo vcs_rtl ;;
+    irun)     echo irun_rtl ;;
+  esac
+}
 
 run_one() {
   local dir="$1"
   local exe="$2"
   local c_args="$3"
   local has_compare="$4"
+  local mk_rtl
+  mk_rtl="$(rtl_make_target)"
 
   if [[ -n "$ONLY" && "$dir" != "$ONLY" ]]; then
     return 0
@@ -76,13 +115,11 @@ run_one() {
 
   log "[$dir] C: make + ./$exe $c_args"
   if ! ( cd "$REPO_ROOT/$dir/C" && make ); then
-    echo "FAIL: $dir C make"
-    failures=$((failures + 1))
+    record_fail "$dir — C make"
     return
   fi
   if ! ( cd "$REPO_ROOT/$dir/C" && eval "./$exe $c_args" ); then
-    echo "FAIL: $dir C run"
-    failures=$((failures + 1))
+    record_fail "$dir — C run"
     return
   fi
 
@@ -91,10 +128,9 @@ run_one() {
     return 0
   fi
 
-  log "[$dir] RTL: make simulate (may take several minutes)"
-  if ! ( cd "$REPO_ROOT/$dir/RTL" && make simulate ); then
-    echo "FAIL: $dir RTL simulate"
-    failures=$((failures + 1))
+  log "[$dir] RTL: make $mk_rtl (tool=$RTL_TOOL, may take several minutes)"
+  if ! ( cd "$REPO_ROOT/$dir/RTL" && make "$mk_rtl" ); then
+    record_fail "$dir — RTL make $mk_rtl ($RTL_TOOL)"
     return
   fi
 
@@ -105,8 +141,7 @@ run_one() {
 
   log "[$dir] python3 compare.py"
   if ! ( cd "$REPO_ROOT/$dir" && python3 compare.py ); then
-    echo "FAIL: $dir compare.py"
-    failures=$((failures + 1))
+    record_fail "$dir — compare.py"
     return
   fi
 
@@ -123,6 +158,7 @@ ensure_median_noise() {
 }
 
 echo "Repository: $REPO_ROOT"
+echo "RTL simulator: $RTL_TOOL (make $(rtl_make_target))"
 
 check_prereqs() {
   if [[ -n "$ONLY" ]]; then
@@ -182,6 +218,10 @@ MODULES
 echo ""
 if [[ "$failures" -gt 0 ]]; then
   echo "Done: $failures step(s) failed."
+  echo "Failed ($failures):"
+  for item in "${FAIL_LIST[@]}"; do
+    echo "  - $item"
+  done
   exit 1
 fi
 if [[ "$SKIP_RTL" -eq 1 ]]; then

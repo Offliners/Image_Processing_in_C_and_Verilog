@@ -14,7 +14,7 @@ $ ./gaussian_blur.o ../lena256.bmp
 
 # RTL
 $ cd ./gaussian_blur_filter/RTL
-$ make simulate
+$ make ivl_rtl
 
 # Compare C vs RTL
 $ cd ./gaussian_blur_filter

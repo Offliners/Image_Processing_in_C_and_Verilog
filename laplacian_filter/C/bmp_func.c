@@ -20,9 +20,11 @@ static BYTE *create_gray_buffer(const BMPImage *src_img)
     if(!gray)
         return NULL;
 
-    for(LWORD y = 0; y < height; y++)
+    LWORD y;
+    LWORD x;
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             LWORD idx = y * row_size + x * 3;
             gray[y * width + x] = calc_gray(src_img->p08Data[idx],
@@ -54,9 +56,11 @@ BMPImage *laplacian_filter(BMPImage *src_img)
         return NULL;
     }
 
-    for(LWORD y = 0; y < height; y++)
+    LWORD y;
+    LWORD x;
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             BYTE out_val = 0;
             if(y > 0 && y + 1 < height && x > 0 && x + 1 < width)

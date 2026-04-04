@@ -4,7 +4,11 @@
 `include "DEFINE.vh"
 `include "LOAD_BMP.v"
 `include "BGR2GRAY.v"
+`ifdef GATE
+`include "LAPLACIAN_FILTER_SYN.v"
+`else
 `include "LAPLACIAN_FILTER.v"
+`endif
 `include "BMP_ROM.v"
 `include "BMP_LWORD_RAM.v"
 
@@ -15,6 +19,9 @@ integer bi, wi;
 integer input_bmp_id;
 integer txt_bmp_id;
 integer output_bmp_id;
+`ifdef __ICARUS__
+integer put_rc;
+`endif
 reg [7:0] pch;
 reg [31:0] dword;
 
@@ -88,7 +95,7 @@ always @(posedge clk) begin
     else begin
         sim_cycle_cnt = sim_cycle_cnt + 1;
         if (sim_cycle_cnt % 1000 == 0)
-            $display("[TESTBENCH] %0d cycles", sim_cycle_cnt);
+            $display("[LAPLACIAN FILTER] %0d cycles", sim_cycle_cnt);
     end
 end
 
@@ -101,8 +108,13 @@ task copy_out_to_in;
 endtask
 
 initial begin
+`ifdef GATE
+    $sdf_annotate("LAPLACIAN_FILTER_SYN.sdf", LAPLACIAN_FILTER1);
+`endif
+`ifndef GATE
     $dumpfile("LAPLACIAN_FILTER.vcd");
     $dumpvars;
+`endif
 end
 
 initial begin
@@ -184,7 +196,7 @@ BGR2GRAY BGR2GRAY1(
     .done(bgr_done)
 );
 
-IMAGE_DILATION LAPLACIAN_FILTER1(
+LAPLACIAN_FILTER LAPLACIAN_FILTER1(
     .clk(clk),
     .rst_n(rst_n),
     .start(dil_start),
@@ -236,7 +248,11 @@ always @(posedge dil_done) begin
             2'b10: pch = BMP_RAM_OUT.ram_word[wi][23:16];
             2'b11: pch = BMP_RAM_OUT.ram_word[wi][31:24];
         endcase
+`ifdef __ICARUS__
+        put_rc = $fputc(pch, output_bmp_id);
+`else
         $fwrite(output_bmp_id, "%c", pch);
+`endif
     end
     $fclose(output_bmp_id);
 

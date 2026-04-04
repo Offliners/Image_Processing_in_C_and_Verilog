@@ -16,9 +16,11 @@ static BYTE *create_gray_buffer(const BMPImage *src_img)
     if(!gray)
         return NULL;
 
-    for(LWORD y = 0; y < height; y++)
+    LWORD y;
+    LWORD x;
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             LWORD idx = y * row_size + x * 3;
             gray[y * width + x] = src_img->p08Data[idx];
@@ -37,25 +39,28 @@ BMPImage *equalize_histogram(BMPImage *src_img)
     LWORD height = src_img->header.stBMPInfoHeader.u32ImageHeight;
     LWORD row_size = get_image_row_size_bytes(&src_img->header);
     LWORD total = width * height;
+    LWORD i;
+    LWORD y;
+    LWORD x;
 
     BYTE *gray = create_gray_buffer(src_img);
     if(!gray)
         return NULL;
 
     LWORD hist[256] = {0};
-    for(LWORD i = 0; i < total; i++)
+    for(i = 0; i < total; i++)
         hist[gray[i]]++;
 
     LWORD cdf[256] = {0};
     LWORD cumulative = 0;
-    for(LWORD i = 0; i < 256; i++)
+    for(i = 0; i < 256; i++)
     {
         cumulative += hist[i];
         cdf[i] = cumulative;
     }
 
     LWORD cdf_min = 0;
-    for(LWORD i = 0; i < 256; i++)
+    for(i = 0; i < 256; i++)
     {
         if(cdf[i] != 0)
         {
@@ -71,9 +76,9 @@ BMPImage *equalize_histogram(BMPImage *src_img)
         return NULL;
     }
 
-    for(LWORD y = 0; y < height; y++)
+    for(y = 0; y < height; y++)
     {
-        for(LWORD x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
         {
             LWORD idx = y * row_size + x * 3;
             BYTE g = gray[y * width + x];

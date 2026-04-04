@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
         return FUNC_FAIL;
     }
 
-    u08Ret |= write_image("output.bmp", out_img);
+    u08Ret |= write_image("../output.bmp", out_img);
 
     free_bmp_image(img);
     free_bmp_image(out_img);

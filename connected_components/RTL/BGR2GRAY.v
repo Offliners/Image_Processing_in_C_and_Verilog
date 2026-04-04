@@ -1,13 +1,14 @@
 `include "DEFINE.vh"
 
+// Streaming: header bytes pass through; each BGR triplet -> gray (x3 for 24bpp BMP).
+// Output bytes go through a byte FIFO; when fifo_cnt >= 8, drain exactly 8 bytes in 8 cycles.
+// After all pixels converted, remaining FIFO bytes (<8) drain in DRAIN_TAIL.
+
 module BGR2GRAY(
-    // Input signals
     clk,
     rst_n,
     start,
     RAM_in_out,
-
-    // Output signals
     RAM_in_ren,
     RAM_in_addr,
     RAM_out_wen,
@@ -28,133 +29,199 @@ output reg [`BYTE_WIDTH-1:0] RAM_out_in;
 output reg [`ADDR_WIDTH-1:0] RAM_out_addr;
 output reg done;
 
-localparam [2:0] IDLE        = 3'b000,
-                 COPY_HEADER = 3'b001,
-                 LOAD_PIXELS = 3'b010,
-                 PROCESS     = 3'b011,
-                 WRITE_HEAD  = 3'b100,
-                 WRITE_DATA  = 3'b101,
-                 FINISH      = 3'b110;
+localparam [3:0] IDLE        = 4'd0,
+                 STREAM_HDR  = 4'd1,
+                 STREAM_PIX  = 4'd2,
+                 DRAIN8      = 4'd3,
+                 DRAIN_TAIL  = 4'd4,
+                 FINISH      = 4'd5;
 
-localparam integer PIXEL_DATA_SIZE = (`BMP_TOTAL_SIZE - `BMP_HEADER_SIZE);
+localparam [31:0] PIXEL_DATA_SIZE = (`BMP_TOTAL_SIZE - `BMP_HEADER_SIZE);
+localparam [`ADDR_WIDTH-1:0] HDR_LAST = `BMP_HEADER_SIZE - 1;
+localparam [31:0] PIXEL_LAST = PIXEL_DATA_SIZE - 1;
+localparam integer FIFO_DEPTH = 16;
+localparam integer FIFO_AW = 4;
 
-reg [2:0] state;
-reg [`ADDR_WIDTH-1:0] header_idx;
-reg [31:0] load_idx;
-reg [31:0] write_idx;
+reg [3:0] state;
+reg [`ADDR_WIDTH-1:0] out_addr;
+reg [31:0] stream_pos;
+reg [1:0] rgb_phase;
+reg [`BYTE_WIDTH-1:0] b_hold, g_hold;
+reg pix_done;
 
-reg [`BYTE_WIDTH-1:0] header_data [0:`BMP_HEADER_SIZE-1];
-reg [`BYTE_WIDTH-1:0] img_data [0:PIXEL_DATA_SIZE-1];
-reg [`BYTE_WIDTH-1:0] out_data [0:PIXEL_DATA_SIZE-1];
+reg [`BYTE_WIDTH-1:0] fifo_mem [0:FIFO_DEPTH-1];
+reg [FIFO_AW-1:0] wr_ptr;
+reg [FIFO_AW-1:0] rd_ptr;
+reg [FIFO_AW:0] fifo_cnt;
 
-integer xi, yi;
-integer base_idx;
-integer sum;
-reg [`BYTE_WIDTH-1:0] b, g, r, gray;
+reg [3:0] drain_left;
+
+function [`BYTE_WIDTH-1:0] gray_from_bgr;
+    input [`BYTE_WIDTH-1:0] bb, gg, rr;
+    reg [16:0] mx;
+    begin
+        mx = bb * 9'd30 + gg * 9'd150 + rr * 9'd76;
+        gray_from_bgr = mx[15:8];
+    end
+endfunction
+
+wire [`BYTE_WIDTH-1:0] gray_comb = gray_from_bgr(b_hold, g_hold, RAM_in_out);
+wire [FIFO_AW-1:0] fifo_wp0 = wr_ptr;
+wire [FIFO_AW-1:0] fifo_wp1 = wr_ptr + 1'b1;
+wire [FIFO_AW-1:0] fifo_wp2 = wr_ptr + 2'd2;
 
 always @(posedge clk or negedge rst_n) begin
-    if(!rst_n) begin
-        state <= IDLE;
-        header_idx <= 0;
-        load_idx <= 0;
-        write_idx <= 0;
-        done <= 1'b0;
+    if (!rst_n) begin
+        state    <= IDLE;
+        out_addr <= 0;
+        stream_pos <= 0;
+        rgb_phase <= 0;
+        b_hold <= 0;
+        g_hold <= 0;
+        pix_done <= 0;
+        wr_ptr <= 0;
+        rd_ptr <= 0;
+        fifo_cnt <= 0;
+        drain_left <= 0;
+        done <= 0;
     end else begin
-        case(state)
+        case (state)
             IDLE: begin
                 done <= 1'b0;
-                if(start) begin
-                    header_idx <= 0;
-                    state <= COPY_HEADER;
+                if (start) begin
+                    out_addr <= 0;
+                    stream_pos <= 0;
+                    rgb_phase <= 0;
+                    pix_done <= 0;
+                    wr_ptr <= 0;
+                    rd_ptr <= 0;
+                    fifo_cnt <= 0;
+                    state <= STREAM_HDR;
                 end
             end
-            COPY_HEADER: begin
-                header_data[header_idx] <= RAM_in_out;
-                if(header_idx == `BMP_HEADER_SIZE - 1) begin
-                    load_idx <= 0;
-                    state <= LOAD_PIXELS;
-                end else begin
-                    header_idx <= header_idx + 1;
-                end
+
+            STREAM_HDR: begin
+                if (out_addr == HDR_LAST)
+                    state <= STREAM_PIX;
+                out_addr <= out_addr + 1'b1;
             end
-            LOAD_PIXELS: begin
-                img_data[load_idx] <= RAM_in_out;
-                if(load_idx == PIXEL_DATA_SIZE - 1) begin
-                    state <= PROCESS;
-                end else begin
-                    load_idx <= load_idx + 1;
-                end
-            end
-            PROCESS: begin
-                for(yi = 0; yi < `BMP_HEIGHT; yi = yi + 1) begin
-                    for(xi = 0; xi < `BMP_WIDTH; xi = xi + 1) begin
-                        base_idx = (yi * `BMP_WIDTH + xi) * 3;
-                        b = img_data[base_idx];
-                        g = img_data[base_idx + 1];
-                        r = img_data[base_idx + 2];
-                        sum = b * 30 + g * 150 + r * 76;
-                        gray = sum >> 8;
-                        out_data[base_idx] = gray;
-                        out_data[base_idx + 1] = gray;
-                        out_data[base_idx + 2] = gray;
+
+            STREAM_PIX: begin
+                if (fifo_cnt >= 8) begin
+                    state <= DRAIN8;
+                    drain_left <= 4'd8;
+                end else if (pix_done) begin
+                    if (fifo_cnt != 0) begin
+                        state <= DRAIN_TAIL;
+                        drain_left <= fifo_cnt[3:0];
+                    end else begin
+                        state <= FINISH;
+                        done <= 1'b1;
                     end
-                end
-                write_idx <= 0;
-                state <= WRITE_HEAD;
-            end
-            WRITE_HEAD: begin
-                if(write_idx == `BMP_HEADER_SIZE - 1) begin
-                    write_idx <= 0;
-                    state <= WRITE_DATA;
                 end else begin
-                    write_idx <= write_idx + 1;
+                    case (rgb_phase)
+                        2'd0: begin
+                            b_hold <= RAM_in_out;
+                            rgb_phase <= 2'd1;
+                            stream_pos <= stream_pos + 1'b1;
+                        end
+                        2'd1: begin
+                            g_hold <= RAM_in_out;
+                            rgb_phase <= 2'd2;
+                            stream_pos <= stream_pos + 1'b1;
+                        end
+                        default: begin
+                            fifo_mem[fifo_wp0] <= gray_comb;
+                            fifo_mem[fifo_wp1] <= gray_comb;
+                            fifo_mem[fifo_wp2] <= gray_comb;
+                            wr_ptr <= wr_ptr + 3'd3;
+                            fifo_cnt <= fifo_cnt + 3'd3;
+                            rgb_phase <= 2'd0;
+                            if (stream_pos == PIXEL_LAST)
+                                pix_done <= 1'b1;
+                            else
+                                stream_pos <= stream_pos + 1'b1;
+                        end
+                    endcase
                 end
             end
-            WRITE_DATA: begin
-                if(write_idx == PIXEL_DATA_SIZE - 1) begin
-                    done <= 1'b1;
-                    state <= FINISH;
+
+            DRAIN8: begin
+                if (drain_left != 0) begin
+                    rd_ptr <= rd_ptr + 1'b1;
+                    fifo_cnt <= fifo_cnt - 1'b1;
+                    out_addr <= out_addr + 1'b1;
+                    drain_left <= drain_left - 1'b1;
                 end else begin
-                    write_idx <= write_idx + 1;
+                    if (fifo_cnt >= 8) begin
+                        drain_left <= 4'd8;
+                    end else if (pix_done) begin
+                        if (fifo_cnt != 0) begin
+                            state <= DRAIN_TAIL;
+                            drain_left <= fifo_cnt[3:0];
+                        end else begin
+                            state <= FINISH;
+                            done <= 1'b1;
+                        end
+                    end else
+                        state <= STREAM_PIX;
                 end
             end
-            FINISH: begin
-                done <= 1'b1;
+
+            DRAIN_TAIL: begin
+                if (drain_left != 0) begin
+                    rd_ptr <= rd_ptr + 1'b1;
+                    fifo_cnt <= fifo_cnt - 1'b1;
+                    out_addr <= out_addr + 1'b1;
+                    drain_left <= drain_left - 1'b1;
+                end else begin
+                    if (pix_done) begin
+                        state <= FINISH;
+                        done <= 1'b1;
+                    end else
+                        state <= STREAM_PIX;
+                end
             end
+
+            FINISH: done <= 1'b1;
+
             default: state <= IDLE;
         endcase
     end
 end
 
 always @(*) begin
-    RAM_in_ren = 1'b0;
-    RAM_in_addr = 0;
-    RAM_out_wen = 1'b0;
+    RAM_in_ren   = 1'b0;
+    RAM_in_addr  = 0;
+    RAM_out_wen  = 1'b0;
     RAM_out_addr = 0;
-    RAM_out_in = 0;
+    RAM_out_in   = 0;
 
-    case(state)
-        COPY_HEADER: begin
-            RAM_in_ren = 1'b1;
-            RAM_in_addr = header_idx;
+    case (state)
+        STREAM_HDR: begin
+            RAM_in_ren   = 1'b1;
+            RAM_in_addr  = out_addr;
+            RAM_out_wen  = 1'b1;
+            RAM_out_addr = out_addr;
+            RAM_out_in   = RAM_in_out;
         end
-        LOAD_PIXELS: begin
-            RAM_in_ren = 1'b1;
-            RAM_in_addr = `BMP_HEADER_SIZE + load_idx[`ADDR_WIDTH-1:0];
+        STREAM_PIX: begin
+            // Drain FIFO first; do not read past last pixel once pix_done.
+            if ((fifo_cnt < 8) && !pix_done) begin
+                RAM_in_ren  = 1'b1;
+                RAM_in_addr = `BMP_HEADER_SIZE + stream_pos[`ADDR_WIDTH-1:0];
+            end
         end
-        WRITE_HEAD: begin
-            RAM_out_wen = 1'b1;
-            RAM_out_addr = write_idx[`ADDR_WIDTH-1:0];
-            RAM_out_in = header_data[write_idx];
-        end
-        WRITE_DATA: begin
-            RAM_out_wen = 1'b1;
-            RAM_out_addr = `BMP_HEADER_SIZE + write_idx[`ADDR_WIDTH-1:0];
-            RAM_out_in = out_data[write_idx];
+        DRAIN8, DRAIN_TAIL: begin
+            if (drain_left != 0) begin
+                RAM_out_wen  = 1'b1;
+                RAM_out_addr = out_addr;
+                RAM_out_in   = fifo_mem[rd_ptr];
+            end
         end
         default: begin
-            RAM_in_ren = 1'b0;
-            RAM_out_wen = 1'b0;
+            RAM_in_ren   = 1'b0;
+            RAM_out_wen  = 1'b0;
         end
     endcase
 end

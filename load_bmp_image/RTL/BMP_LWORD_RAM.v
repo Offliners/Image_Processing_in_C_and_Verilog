@@ -21,7 +21,7 @@ output [`LWORD_WIDTH-1:0] RAM_read_word;
 
 integer ri;
 reg [`LWORD_WIDTH-1:0] ram_word [0:NUM_WORDS-1];
-reg [`LWORD_WIDTH-1:0] rmw_tmp;
+reg [`LWORD_WIDTH-1:0] rmw_next;
 wire [`ADDR_WIDTH-1:0] widx;
 
 assign widx = RAM_addr >> 2;
@@ -32,17 +32,22 @@ initial begin
         ram_word[ri] = 32'h0;
 end
 
-always @(posedge clk) begin
-    if(RAM_wen_byte) begin
-        rmw_tmp = ram_word[widx];
+always @(*) begin
+    rmw_next = ram_word[widx];
+    if (RAM_wen_byte) begin
         case(RAM_addr[1:0])
-            2'b00: rmw_tmp[7:0]   = RAM_din[7:0];
-            2'b01: rmw_tmp[15:8]  = RAM_din[7:0];
-            2'b10: rmw_tmp[23:16] = RAM_din[7:0];
-            2'b11: rmw_tmp[31:24] = RAM_din[7:0];
+            2'b00: rmw_next[7:0]   = RAM_din[7:0];
+            2'b01: rmw_next[15:8]  = RAM_din[7:0];
+            2'b10: rmw_next[23:16] = RAM_din[7:0];
+            default: rmw_next[31:24] = RAM_din[7:0];
         endcase
-        ram_word[widx] <= rmw_tmp;
-    end else if(RAM_wen_lword)
+    end
+end
+
+always @(posedge clk) begin
+    if (RAM_wen_byte)
+        ram_word[widx] <= rmw_next;
+    else if (RAM_wen_lword)
         ram_word[widx] <= RAM_din;
 end
 

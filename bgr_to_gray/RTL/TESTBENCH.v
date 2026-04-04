@@ -3,7 +3,11 @@
 
 `include "DEFINE.vh"
 `include "LOAD_BMP.v"
+`ifdef GATE
+`include "BGR2GRAY_SYN.v"
+`else
 `include "BGR2GRAY.v"
+`endif
 `include "BMP_ROM.v"
 `include "BMP_LWORD_RAM.v"
 
@@ -14,6 +18,9 @@ integer bi, wi;
 integer input_bmp_id;
 integer txt_bmp_id;
 integer output_bmp_id;
+`ifdef __ICARUS__
+integer put_rc;
+`endif
 reg [7:0] pch;
 reg [31:0] dword;
 
@@ -72,13 +79,18 @@ always @(posedge clk) begin
     else begin
         sim_cycle_cnt = sim_cycle_cnt + 1;
         if (sim_cycle_cnt % 1000 == 0)
-            $display("[TESTBENCH] %0d cycles", sim_cycle_cnt);
+            $display("[BGR TO GRAY] %0d cycles", sim_cycle_cnt);
     end
 end
 
 initial begin
+`ifdef GATE
+    $sdf_annotate("BGR2GRAY_SYN.sdf", BGR2GRAY1);
+`endif
+`ifndef GATE
     $dumpfile("BGR2GRAY.vcd");
     $dumpvars;
+`endif
 end
 
 initial begin
@@ -172,8 +184,10 @@ BMP_LWORD_RAM #(.NUM_WORDS(`BMP_RAM_NUM_WORDS)) BMP_RAM_OUT(
 
 always @(posedge done)begin
     @(negedge clk);
-    $display("Final load_idx = %0d, write_idx = %0d", BGR2GRAY1.load_idx, BGR2GRAY1.write_idx);
-    $display("Last img_data bytes: %02x %02x %02x", BGR2GRAY1.img_data[`BMP_TOTAL_SIZE-`BMP_HEADER_SIZE-3], BGR2GRAY1.img_data[`BMP_TOTAL_SIZE-`BMP_HEADER_SIZE-2], BGR2GRAY1.img_data[`BMP_TOTAL_SIZE-`BMP_HEADER_SIZE-1]);
+`ifndef GATE
+    $display("BGR2GRAY: out_addr=%0d fifo_cnt=%0d stream_pos=%0d pix_done=%b",
+             BGR2GRAY1.out_addr, BGR2GRAY1.fifo_cnt, BGR2GRAY1.stream_pos, BGR2GRAY1.pix_done);
+`endif
     $display("\033[0;32mOutput BMP Image!\033[m");
 
     output_bmp_id = $fopen(`OUTPUT_BMP_IMAGE_PATH, "wb");
@@ -185,7 +199,11 @@ always @(posedge done)begin
             2'b10: pch = BMP_RAM_OUT.ram_word[wi][23:16];
             2'b11: pch = BMP_RAM_OUT.ram_word[wi][31:24];
         endcase
+`ifdef __ICARUS__
+        put_rc = $fputc(pch, output_bmp_id);
+`else
         $fwrite(output_bmp_id, "%c", pch);
+`endif
     end
     $fclose(output_bmp_id);
 

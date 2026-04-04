@@ -14,7 +14,7 @@ $ ./laplacian_filter.o ../lena256.bmp
 
 # RTL
 $ cd ./laplacian_filter/RTL
-$ make simulate
+$ make ivl_rtl
 
 # Compare C vs RTL
 $ cd ./laplacian_filter

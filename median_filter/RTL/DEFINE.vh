@@ -25,7 +25,7 @@
 // ROM/RAM Address
 `define INIT_ADDR            {`ADDR_WIDTH{1'b1}}
 
-// File path (must match C: noisy input for salt-and-pepper median demo)
+// Must match C compare flow (README: both use noisy input). Use ../lena256.bmp for clean-image tests.
 `define INPUT_BMP_IMAGE_PATH   "../lena256_noise.bmp"
 `define OUTPUT_BMP_IMAGE_PATH  "./output.bmp"
 

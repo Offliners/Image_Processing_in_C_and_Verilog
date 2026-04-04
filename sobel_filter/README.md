@@ -14,7 +14,7 @@ $ ./sobel_filter.o ../lena256.bmp
 
 # RTL
 $ cd ./sobel_filter/RTL
-$ make simulate
+$ make ivl_rtl
 
 # Compare C vs RTL
 $ cd ./sobel_filter

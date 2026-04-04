@@ -15,7 +15,7 @@ $ ./histogram_equalization.o ../lena256.bmp
 
 # RTL
 $ cd ./histogram_equalization/RTL
-$ make simulate
+$ make ivl_rtl
 
 # Compare C vs RTL
 $ cd ./histogram_equalization
