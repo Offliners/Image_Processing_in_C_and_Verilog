@@ -87,9 +87,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("BINARIZATION_SYN.sdf", BINARIZATION1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("BINARIZATION.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("BINARIZATION.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

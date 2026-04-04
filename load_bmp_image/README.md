@@ -5,6 +5,9 @@ Read image from BMP (bitmap) file, and then write it into another.
 | ----------------------- | ----------------------- |
 | ![input](./lena256.bmp) | ![output](./output.bmp) |
 
+## Principle
+A BMP **DIB** stores a header (this project uses the classic **54-byte** file + info header) followed by **raw pixel rows**. Rows are often stored **bottom-up**, and each scanline is **padded** to a **4-byte** boundary. For 24-bit images, pixels are packed as **B, G, R** per sample (little-endian byte order in the file stream).
+
 ## Usage
 ```shell
 # C

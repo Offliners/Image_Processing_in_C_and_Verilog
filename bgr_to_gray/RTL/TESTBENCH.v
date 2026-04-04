@@ -87,9 +87,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("BGR2GRAY_SYN.sdf", BGR2GRAY1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("BGR2GRAY.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("BGR2GRAY.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

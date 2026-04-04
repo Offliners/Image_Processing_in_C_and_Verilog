@@ -87,9 +87,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("GAUSSIAN_BLUR_SYN.sdf", GAUSSIAN_BLUR1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("GAUSSIAN_BLUR.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("GAUSSIAN_BLUR.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

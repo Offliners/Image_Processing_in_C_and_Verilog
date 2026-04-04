@@ -87,9 +87,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("IMAGE_HISTOGRAM_SYN.sdf", IMAGE_HISTOGRAM1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("IMAGE_HISTOGRAM.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("IMAGE_HISTOGRAM.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

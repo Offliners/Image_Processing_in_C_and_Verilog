@@ -5,6 +5,15 @@ Apply 3x3 dilation on a binarized grayscale image.
 | ----------------------- | ----------------------- |
 | ![input](./lena256.bmp) | ![output](./output.bmp) |
 
+## Principle
+**Binary dilation** (morphology) expands **foreground** (white) regions. With structuring element \(S\) (here **3×3** ones) and binary image \(I\),
+
+```math
+(I\oplus S)(p)=\bigvee_{s\in S} I(p+s)
+```
+
+where \(\vee\) is logical **OR** (equivalently **max** on \(\{0,255\}\) pixels).
+
 ## Usage
 ```shell
 # C

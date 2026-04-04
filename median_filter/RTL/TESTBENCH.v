@@ -87,9 +87,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("MEDIAN_FILTER_SYN.sdf", MEDIAN_FILTER1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("MEDIAN_FILTER.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("MEDIAN_FILTER.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

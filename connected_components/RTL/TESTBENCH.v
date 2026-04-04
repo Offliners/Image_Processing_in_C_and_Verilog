@@ -111,9 +111,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("CONNECTED_COMPONENTS_SYN.sdf", CONNECTED_COMPONENTS1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("CONNECTED_COMPONENTS.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("CONNECTED_COMPONENTS.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

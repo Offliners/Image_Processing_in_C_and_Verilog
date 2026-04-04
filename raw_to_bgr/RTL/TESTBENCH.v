@@ -55,8 +55,13 @@ always @(posedge clk) begin
 end
 
 initial begin
+`ifdef __ICARUS__
     $dumpfile("RAW_TO_BGR.vcd");
     $dumpvars;
+`else
+    $fsdbDumpfile("RAW_TO_BGR.fsdb");
+    $fsdbDumpvars;
+`endif
 end
 
 initial begin

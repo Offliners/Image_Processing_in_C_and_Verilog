@@ -1,25 +1,21 @@
 #!/usr/bin/env bash
-# Run all modules listed in README "Contents" in order: build and run C, RTL simulation,
-# then compare C vs RTL output with each module's compare.py.
+# Run all modules listed in README "Contents" in order: build and run C, gate-level simulation
+# (make vcs_gate or irun_gate per module RTL/Makefile), then compare C vs gate output with compare.py.
 #
-# Place inputs inside each module directory (same folder as that module's README):
-#   - <module>/lena256.bmp          (all BMP-based modules)
-#   - raw_to_bgr/lena256_rgb.raw
-#   - raw_to_gray/lena256_gray.raw
-# If median_filter/lena256_noise.bmp is missing, add_noise.py generates it from
-# median_filter/lena256.bmp.
+# Same input file requirements as run_all_content_rtl.sh (lena256.bmp, raw files, median noise, etc.).
 #
 # Usage:
-#   ./run_all_content_tests.sh                    # all modules, RTL via Icarus (make ivl_rtl)
-#   ./run_all_content_tests.sh --rtl-tool vcs     # RTL via Synopsys VCS (make vcs_rtl)
-#   ./run_all_content_tests.sh --rtl-tool irun    # RTL via Cadence irun (make irun_rtl)
-#   ./run_all_content_tests.sh --rtl-tool=vcs     # same (GNU-style)
-#   RTL_TOOL=vcs ./run_all_content_tests.sh       # default from env; --rtl-tool on CLI overrides
-#   ./run_all_content_tests.sh --skip-rtl         # C only (skips RTL and compare)
-#   ./run_all_content_tests.sh --only median_filter
-#   RUN_RTL=0 ./run_all_content_tests.sh          # same as --skip-rtl
+#   ./run_all_content_gate.sh                    # default RTL_TOOL=vcs (make vcs_gate)
+#   ./run_all_content_gate.sh --rtl-tool irun  # make irun_gate
+#   ./run_all_content_gate.sh --rtl-tool=vcs
+#   RTL_TOOL=irun ./run_all_content_gate.sh
+#   ./run_all_content_gate.sh --skip-rtl       # C only
+#   ./run_all_content_gate.sh --only median_filter
+#   RUN_RTL=0 ./run_all_content_gate.sh
 #
-# laplacian_filter has no compare.py; C and RTL still run, comparison is skipped.
+# RTL_TOOL must be vcs or irun (no Icarus gate target in this repo).
+#
+# laplacian_filter has no compare.py; C and simulation still run, comparison is skipped.
 
 set -u
 
@@ -28,7 +24,7 @@ cd "$REPO_ROOT"
 
 SKIP_RTL=0
 ONLY=""
-RTL_TOOL="${RTL_TOOL:-iverilog}"
+RTL_TOOL="${RTL_TOOL:-vcs}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -40,14 +36,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --rtl-tool)
       shift
-      [[ $# -ge 1 ]] || { echo "error: --rtl-tool requires iverilog, vcs, or irun"; exit 2; }
+      [[ $# -ge 1 ]] || { echo "error: --rtl-tool requires vcs or irun"; exit 2; }
       RTL_TOOL="$1"
       ;;
     --rtl-tool=*)
       RTL_TOOL="${1#*=}"
       ;;
     -h|--help)
-      sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -59,9 +55,9 @@ done
 [[ -n "${RUN_RTL:-}" && "$RUN_RTL" == "0" ]] && SKIP_RTL=1
 
 case "$RTL_TOOL" in
-  iverilog|vcs|irun) ;;
+  vcs|irun) ;;
   *)
-    echo "error: RTL_TOOL must be iverilog, vcs, or irun (got: $RTL_TOOL)"
+    echo "error: gate RTL_TOOL must be vcs or irun (got: $RTL_TOOL)"
     exit 2
     ;;
 esac
@@ -93,11 +89,10 @@ record_fail() {
   echo "FAIL: $msg"
 }
 
-rtl_make_target() {
+gate_make_target() {
   case "$RTL_TOOL" in
-    iverilog) echo ivl_rtl ;;
-    vcs)      echo vcs_rtl ;;
-    irun)     echo irun_rtl ;;
+    vcs)  echo vcs_gate ;;
+    irun) echo irun_gate ;;
   esac
 }
 
@@ -106,8 +101,8 @@ run_one() {
   local exe="$2"
   local c_args="$3"
   local has_compare="$4"
-  local mk_rtl
-  mk_rtl="$(rtl_make_target)"
+  local mk_gate
+  mk_gate="$(gate_make_target)"
 
   if [[ -n "$ONLY" && "$dir" != "$ONLY" ]]; then
     return 0
@@ -124,13 +119,13 @@ run_one() {
   fi
 
   if [[ "$SKIP_RTL" -eq 1 ]]; then
-    log "[$dir] skipping RTL (--skip-rtl)"
+    log "[$dir] skipping gate simulation (--skip-rtl)"
     return 0
   fi
 
-  log "[$dir] RTL: make $mk_rtl (tool=$RTL_TOOL, may take several minutes)"
-  if ! ( cd "$REPO_ROOT/$dir/RTL" && make "$mk_rtl" ); then
-    record_fail "$dir — RTL make $mk_rtl ($RTL_TOOL)"
+  log "[$dir] gate: make $mk_gate (tool=$RTL_TOOL, may take several minutes)"
+  if ! ( cd "$REPO_ROOT/$dir/RTL" && make "$mk_gate" ); then
+    record_fail "$dir — gate make $mk_gate ($RTL_TOOL)"
     return
   fi
 
@@ -158,7 +153,7 @@ ensure_median_noise() {
 }
 
 echo "Repository: $REPO_ROOT"
-echo "RTL simulator: $RTL_TOOL (make $(rtl_make_target))"
+echo "Gate simulator: $RTL_TOOL (make $(gate_make_target))"
 
 check_prereqs() {
   if [[ -n "$ONLY" ]]; then
@@ -225,8 +220,8 @@ if [[ "$failures" -gt 0 ]]; then
   exit 1
 fi
 if [[ "$SKIP_RTL" -eq 1 ]]; then
-  echo "Done: C stages only (RTL and compare skipped)."
+  echo "Done: C stages only (gate and compare skipped)."
 else
-  echo "Done: all modules passed."
+  echo "Done: all modules passed (gate, $RTL_TOOL)."
 fi
 exit 0

@@ -87,9 +87,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("HORIZONTAL_FLIP_SYN.sdf", HORIZONTAL_FLIP1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("HORIZONTAL_FLIP.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("HORIZONTAL_FLIP.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

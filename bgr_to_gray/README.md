@@ -5,6 +5,15 @@ Read image from BMP (bitmap) file, and then convert it (BGR image) to grayscale.
 | ----------------------- | ----------------------- |
 | ![input](./lena256.bmp) | ![output](./output.bmp) |
 
+## Principle
+**Grayscale / luma** approximates perceived brightness from three channels. This project uses **ITU-R BT.601–style luma weights** on BGR samples (B is first byte in BMP order):
+
+```math
+Y = 0.114\,B + 0.587\,G + 0.299\,R
+```
+
+The output BMP keeps **B = G = R = Y** for each pixel. See **BGR to Grayscale Conversion** below for intuition and comparisons.
+
 ## Usage
 ```shell
 # C

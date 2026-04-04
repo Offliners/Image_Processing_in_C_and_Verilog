@@ -87,9 +87,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("VERTICAL_FLIP_SYN.sdf", VERTICAL_FLIP1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("VERTICAL_FLIP.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("VERTICAL_FLIP.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

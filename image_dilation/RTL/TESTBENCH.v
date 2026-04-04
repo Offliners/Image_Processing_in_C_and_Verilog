@@ -111,9 +111,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("IMAGE_DILATION_SYN.sdf", IMAGE_DILATION1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("IMAGE_DILATION.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("IMAGE_DILATION.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

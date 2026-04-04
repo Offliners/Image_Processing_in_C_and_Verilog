@@ -6,6 +6,15 @@
 | ----------------------- | ----------------------- |
 | ![input](./lena256.bmp) | ![output](./output.bmp) |
 
+## Principle
+**Vertical flip** reverses **row order** (not left–right mirror). If the image height is \(H\) and \(y\) is the row index from the top,
+
+```math
+I'(x,y)=I(x,\,H-1-y)
+```
+
+This matches the row swap used when reconciling **top-down RAW** with **bottom-up BMP** storage in related modules.
+
 ## Usage
 ```shell
 # C

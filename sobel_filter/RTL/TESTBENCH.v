@@ -111,9 +111,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("SOBEL_FILTER_SYN.sdf", SOBEL_FILTER1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("SOBEL_FILTER.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("SOBEL_FILTER.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

@@ -111,9 +111,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("LAPLACIAN_FILTER_SYN.sdf", LAPLACIAN_FILTER1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("LAPLACIAN_FILTER.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("LAPLACIAN_FILTER.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

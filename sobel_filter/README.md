@@ -5,6 +5,17 @@ Detect edges using Sobel operator on a grayscale image.
 | ----------------------- | ----------------------- |
 | ![input](./lena256.bmp) | ![output](./output.bmp) |
 
+## Principle
+The **Sobel operator** estimates gradients with two separable **3×3** masks \(S_x\) (horizontal derivative) and \(S_y\) (vertical). Let \(G_x = I \ast S_x\), \(G_y = I \ast S_y\). Edge strength is often shown as
+
+```math
+|G| \approx |G_x| + |G_y|
+\quad\text{or}\quad
+|G| = \sqrt{G_x^{2}+G_y^{2}}
+```
+
+(Input is grayscale; output is encoded back to BMP.)
+
 ## Usage
 ```shell
 # C

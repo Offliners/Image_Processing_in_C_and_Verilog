@@ -5,6 +5,13 @@
 | ----------------------- | ------------------------ |
 | ![input](./lena256.bmp) | ![output](./output.bmp) |
 
+## Principle
+**Horizontal flip** mirrors each row about the vertical midline. With image width \(W\),
+
+```math
+I'(x,y)=I(W-1-x,\,y)
+```
+
 ## Usage
 ```shell
 # C

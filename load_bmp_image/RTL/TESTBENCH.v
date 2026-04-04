@@ -55,9 +55,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("LOAD_BMP_SYN.sdf", LOAD_BMP1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("LOAD_BMP.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("LOAD_BMP.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

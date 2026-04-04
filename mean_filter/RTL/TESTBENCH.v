@@ -87,9 +87,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("MEAN_FILTER_SYN.sdf", MEAN_FILTER1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("MEAN_FILTER.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("MEAN_FILTER.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

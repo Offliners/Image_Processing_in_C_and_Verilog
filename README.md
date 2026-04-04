@@ -22,6 +22,7 @@ In this repository there are some image processing algorithms implemented using 
     + [Sobel Filter](#sobel-filter)
     + [Laplacian Filter](#laplacian-filter)
 * [Quick Test](#quick-test)
+* [Batch synthesis (Design Compiler)](#batch-synthesis-design-compiler)
 * [Image Processing Flow](#image-processing-flow)
 * [Tools](#tools)
 
@@ -230,31 +231,51 @@ Detect edges with 3x3 Laplacian operator on a grayscale image.
 </details>
 
 ## Quick Test
-`run_all_content_tests.sh` runs, for each module in order: C build and run, RTL simulation via `RTL/Makefile` targets `ivl_rtl`, `vcs_rtl`, or `irun_rtl`, and `compare.py` when present. Place test assets under each module (e.g. `lena256.bmp`, `raw_to_bgr/lena256_rgb.raw`). If `median_filter/lena256_noise.bmp` is missing, the script tries to generate it with `add_noise.py` from `lena256.bmp`. On failure, the script prints how many steps failed and a list of them.
+**`run_all_content_rtl.sh`** runs, for each module in order: C build and run, **RTL** simulation (`ivl_rtl` / `vcs_rtl` / `irun_rtl`), and `compare.py` when present. **`--rtl-tool`** accepts **`ivl`** (Icarus, default), **`vcs`**, or **`irun`**. The name **`iverilog`** is accepted as an alias for **`ivl`** (including `RTL_TOOL=iverilog` in the environment).
+
+**`run_all_content_gate.sh`** does the same flow with **gate-level** simulation only: **`make vcs_gate`** or **`make irun_gate`**. **`--rtl-tool`** must be **`vcs`** (default) or **`irun`** (no Icarus gate target).
+
+Place test assets under each module (e.g. `lena256.bmp`, `raw_to_bgr/lena256_rgb.raw`). If `median_filter/lena256_noise.bmp` is missing, the scripts try to generate it with `add_noise.py` from `lena256.bmp`. On failure, they print how many steps failed and a list of them.
 
 ```shell
 cd Image_Processing_in_C_and_Verilog
 
-# All modules (default RTL: Icarus, make ivl_rtl)
-./run_all_content_tests.sh
+# RTL (default: ivl → make ivl_rtl)
+./run_all_content_rtl.sh
+./run_all_content_rtl.sh --rtl-tool ivl
+./run_all_content_rtl.sh --rtl-tool vcs
+./run_all_content_rtl.sh --rtl-tool irun
+./run_all_content_rtl.sh --rtl-tool=vcs
+RTL_TOOL=irun ./run_all_content_rtl.sh
 
-# RTL with Synopsys VCS or Cadence irun
-./run_all_content_tests.sh --rtl-tool vcs
-./run_all_content_tests.sh --rtl-tool irun
-./run_all_content_tests.sh --rtl-tool=vcs
+# Gate (default: vcs → make vcs_gate)
+./run_all_content_gate.sh
+./run_all_content_gate.sh --rtl-tool irun
+RTL_TOOL=irun ./run_all_content_gate.sh
 
-# Default simulator from env; --rtl-tool on the command line overrides RTL_TOOL
-RTL_TOOL=vcs ./run_all_content_tests.sh
-
-# C only: skip RTL and compare.py
-./run_all_content_tests.sh --skip-rtl
-RUN_RTL=0 ./run_all_content_tests.sh
+# C only: skip simulation and compare.py
+./run_all_content_rtl.sh --skip-rtl
+./run_all_content_gate.sh --skip-rtl
+RUN_RTL=0 ./run_all_content_rtl.sh
 
 # Single module only (directory name, e.g. median_filter)
-./run_all_content_tests.sh --only median_filter
+./run_all_content_rtl.sh --only median_filter
+./run_all_content_gate.sh --only median_filter
 
-# Print usage
-./run_all_content_tests.sh --help
+# Usage
+./run_all_content_rtl.sh --help
+./run_all_content_gate.sh --help
+```
+
+### Batch synthesis (Design Compiler)
+`run_all_content_syn.sh` runs **`make syn`** in each module’s `RTL/` directory, in the same order as [Contents](#contents). This invokes Synopsys **Design Compiler** (`dc_shell` + `syn.tcl` per module). It does **not** run C, simulation, or `compare.py`. On failure, the script prints the failure count and a list (same style as `run_all_content_rtl.sh`).
+
+```shell
+cd Image_Processing_in_C_and_Verilog
+
+./run_all_content_syn.sh
+./run_all_content_syn.sh --only binarization
+./run_all_content_syn.sh --help
 ```
 
 ## Image Processing Flow

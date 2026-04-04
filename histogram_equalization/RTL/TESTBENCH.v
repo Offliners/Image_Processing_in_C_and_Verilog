@@ -87,9 +87,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("HISTOGRAM_EQUALIZATION_SYN.sdf", HISTOGRAM_EQUALIZATION1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("HISTOGRAM_EQUALIZATION.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("HISTOGRAM_EQUALIZATION.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 

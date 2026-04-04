@@ -7,6 +7,13 @@ Base image in this folder is **`./lena256.bmp`**. Both **C** and **RTL** read th
 | ------------------------------ | ------------------------ |
 | ![input](./lena256_noise.bmp) | ![output](./output.bmp) |
 
+## Principle
+The **median filter** is an **order-statistic** smoother: the center pixel becomes the **median** of intensities inside a \(k\times k\) window. It removes **salt-and-pepper** impulses better than a mean filter while keeping edges sharper than strong blurring:
+
+```math
+\hat{I}(x,y)=\mathrm{median}\{\, I(i,j) : (i,j)\in W_k(x,y)\,\}
+```
+
 ## Usage
 ```shell
 # Generate salt-and-pepper image from ./lena256.bmp

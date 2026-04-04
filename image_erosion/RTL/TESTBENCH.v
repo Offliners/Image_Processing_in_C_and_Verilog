@@ -111,9 +111,14 @@ initial begin
 `ifdef GATE
     $sdf_annotate("IMAGE_EROSION_SYN.sdf", IMAGE_EROSION1);
 `endif
+`ifdef __ICARUS__
 `ifndef GATE
     $dumpfile("IMAGE_EROSION.vcd");
     $dumpvars;
+`endif
+`else
+    $fsdbDumpfile("IMAGE_EROSION.fsdb");
+    $fsdbDumpvars;
 `endif
 end
 
