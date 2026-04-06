@@ -1,17 +1,17 @@
 # Median Filter
 Read image with salt and pepper noise from BMP (bitmap) file, and then use median filter to remove noise.
 
-Base image in this folder is **`./lena256.bmp`**. Both **C** and **RTL** read the same noisy input **`./lena256_noise.bmp`**; generate it with `add_noise.py` (below). Program output is **`./output.bmp`** (C writes `C/output.bmp`, RTL writes `RTL/output.bmp`; `compare.py` compares those).
-
 | Input                          | Output (filter size: 3)  |
 | ------------------------------ | ------------------------ |
 | ![input](./lena256_noise.bmp) | ![output](./output.bmp) |
 
 ## Principle
-The **median filter** is an **order-statistic** smoother: the center pixel becomes the **median** of intensities inside a \(k\times k\) window. It removes **salt-and-pepper** impulses better than a mean filter while keeping edges sharper than strong blurring:
+The **median filter** uses a \(k\times k\) window. This project applies the **median separately to each BMP channel** (B, G, R): collect the nine \(B\) values, sort them, take the **middle** sample; repeat for \(G\) and \(R\). **C** uses **merge sort** on each channel; **RTL** uses a **Batcher odd-even mergesort** comparator network (merge-sort class, fixed 28 compare–exchange stages per channel for \(n=9\)).
 
 ```math
-\hat{I}(x,y)=\mathrm{median}\{\, I(i,j) : (i,j)\in W_k(x,y)\,\}
+\hat{B}=\mathrm{median}\{B_{i,j}\},\quad
+\hat{G}=\mathrm{median}\{G_{i,j}\},\quad
+\hat{R}=\mathrm{median}\{R_{i,j}\},\quad (i,j)\in W_k
 ```
 
 ## Usage
@@ -23,7 +23,7 @@ $ python3 add_noise.py -i ./lena256.bmp -o ./lena256_noise.bmp
 # C
 $ cd ./median_filter/C
 $ make
-$ ./median_filter.o ../lena256_noise.bmp 3
+$ ./median_filter.o ../lena256_noise.bmp
 
 # RTL
 $ cd ./median_filter/RTL

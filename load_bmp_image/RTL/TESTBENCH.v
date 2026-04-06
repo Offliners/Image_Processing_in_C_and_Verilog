@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-`define CYCLE 10.0
+`define CYCLE 20.0
 
 `include "DEFINE.vh"
 `ifdef GATE

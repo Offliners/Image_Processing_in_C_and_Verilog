@@ -156,37 +156,61 @@ BMPImage *MedianFilter(BMPImage *src_img, LWORD mask_size)
     return filtered_img;
 }
 
-BMPColorTable cal_median(BMPColorTable *arr, LWORD arr_size)
+/* Merge sort on BYTE keys (merge step uses work[] scratch). */
+static void merge_sort_u8(BYTE *a, BYTE *work, LWORD n)
 {
-    LWORD u32i, u32j;
-    LWORD u32a_sum = 0;
-    LWORD u32b_sum = 0;
-
-    // Bubble sort
-    for(u32i = 0; u32i < arr_size; u32i++)
+    LWORD mid, i, j, k;
+    if(n <= 1)
+        return;
+    mid = n / 2;
+    merge_sort_u8(a, work, mid);
+    merge_sort_u8(a + mid, work, n - mid);
+    i = 0;
+    j = mid;
+    k = 0;
+    while(i < mid && j < n)
     {
-        BYTE isSorted = 1;
-        for(u32j = u32i + 1; u32j < arr_size; u32j++)
-        {
-            u32a_sum = arr[u32i].u08Blue + arr[u32i].u08Green + arr[u32i].u08Red;
-            u32b_sum = arr[u32j].u08Blue + arr[u32j].u08Green + arr[u32j].u08Red;
-            if(u32a_sum > u32b_sum)
-            {
-                isSorted = 0;
-                swap_data(&arr[u32i], &arr[u32j]);
-            }
-        }
-
-        if(isSorted)
-            break;
+        if(a[i] <= a[j])
+            work[k++] = a[i++];
+        else
+            work[k++] = a[j++];
     }
-
-    return arr[arr_size / 2];
+    while(i < mid)
+        work[k++] = a[i++];
+    while(j < n)
+        work[k++] = a[j++];
+    for(i = 0; i < n; i++)
+        a[i] = work[i];
 }
 
-void swap_data(BMPColorTable *a, BMPColorTable *b)
+/* Per-channel median: sort B, G, R separately (3×3 → 9 samples), then take middle index. */
+BMPColorTable cal_median(BMPColorTable *arr, LWORD arr_size)
 {
-    BMPColorTable u08temp = *a;
-    *a = *b;
-    *b = u08temp;
+    BYTE b[9], g[9], r[9];
+    BYTE work[9];
+    BMPColorTable out;
+    LWORD k;
+    if(!arr || arr_size == 0 || arr_size > 9)
+    {
+        out.u08Blue = 0;
+        out.u08Green = 0;
+        out.u08Red = 0;
+        out.u08Reserved = 0;
+        return out;
+    }
+    for(k = 0; k < arr_size; k++)
+    {
+        b[k] = arr[k].u08Blue;
+        g[k] = arr[k].u08Green;
+        r[k] = arr[k].u08Red;
+    }
+    merge_sort_u8(b, work, arr_size);
+    merge_sort_u8(g, work, arr_size);
+    merge_sort_u8(r, work, arr_size);
+    k = arr_size / 2;
+    out.u08Blue = b[k];
+    out.u08Green = g[k];
+    out.u08Red = r[k];
+    out.u08Reserved = 0;
+    return out;
 }

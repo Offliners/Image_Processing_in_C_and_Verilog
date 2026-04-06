@@ -7,6 +7,9 @@ In this repository there are some image processing algorithms implemented using 
     + [Load Image](#load-image)
     + [RAW to BGR](#raw-to-bgr)
     + [RAW to Gray](#raw-to-gray)
+    + [Image Downscaling](#image-downscaling)
+    + [Planar BGR buffer](#planar-bgr-buffer)
+    + [Planar gray buffer](#planar-gray-buffer)
     + [BGR to Gray](#bgr-to-gray)
     + [Binarization](#binarization)
     + [Image Vertical Flip](#image-vertical-flip)
@@ -59,6 +62,42 @@ Read 8-bit grayscale RAW (`256×256` bytes) and write 24-bit BMP with B=G=R per 
 | Input                   | Output                       |
 | ----------------------- | ---------------------------- |
 | `lena256_gray.raw` | ![output](./raw_to_gray/output.bmp) |
+
+</details>
+
+### [Image Downscaling](./image_downscaling/README.md)
+Downscale **256×256** → **128×128** by **2×2 box averaging** each BGR channel (same rounding as RTL). BMP header fields are rewritten for the smaller image.
+
+<details>
+<summary>More</summary>
+
+| Input                   | Output (128×128)             |
+| ----------------------- | ---------------------------- |
+| ![input](./image_downscaling/lena256.bmp) | ![output](./image_downscaling/output.bmp) |
+
+</details>
+
+### [Planar BGR buffer](./planar_bgr/README.md)
+**BMP_ROM → planar B/G/R SRAMs → `PLANAR_ALGO_BGR_IDENTITY` (or custom) → BGR merge → output RAM → BMP file.** 24 bpp file order is B,G,R. TB mux priority: **LOAD > ALGO > MERGE read**.
+
+<details>
+<summary>More</summary>
+
+| Input | Output |
+| ----- | ------ |
+| ![in](./planar_bgr/lena256.bmp) | ![out](./planar_bgr/output.bmp) |
+
+</details>
+
+### [Planar gray buffer](./planar_gray/README.md)
+Same **planar pipeline** as `planar_bgr`: load → **`PLANAR_GRAY_ALGO_IDENTITY`** → merge. One gray plane \(Y=(30B+150G+76R)\gg 8\), then **B=G=R=Y** to 24 bpp output. RTL: **`make vs_rtl`** (VCS).
+
+<details>
+<summary>More</summary>
+
+| Input | Output |
+| ----- | ------ |
+| ![in](./planar_gray/lena256.bmp) | ![out](./planar_gray/output.bmp) |
 
 </details>
 
@@ -230,8 +269,13 @@ Detect edges with 3x3 Laplacian operator on a grayscale image.
 
 </details>
 
+## RAM arbitration note
+
+- **`planar_bgr` / `planar_gray`**: each planar `BMP_LWORD_RAM` port is muxed with priority **LOAD (byte write) → algorithm (byte write) → merge (address only, `wen=0`)** so only one writer drives the plane per cycle.
+- **Other Verilog demos** (e.g. mean filter, Sobel): a single input buffer uses **`load_done ? algo_ram_addr : load_ram_addr`** (and disables load word-enables after load). That is the same *sequential load then algorithm* idea without planar merge.
+
 ## Quick Test
-**`run_all_content_rtl.sh`** runs, for each module in order: C build and run, **RTL** simulation (`ivl_rtl` / `vcs_rtl` / `irun_rtl`), and `compare.py` when present. **`--rtl-tool`** accepts **`ivl`** (Icarus, default), **`vcs`**, or **`irun`**. The name **`iverilog`** is accepted as an alias for **`ivl`** (including `RTL_TOOL=iverilog` in the environment).
+**`run_all_content_rtl.sh`** runs, for each module in order: C build and run, **RTL** simulation (**`make vs_rtl`** with VCS by default, or **`make ivl_rtl`** / **`make irun_rtl`**), and `compare.py` when present. **`--rtl-tool`** accepts **`vcs`** (default, runs **`vs_rtl`**), **`vs`** (alias for **`vcs`**), **`ivl`** (Icarus), or **`irun`**. The name **`iverilog`** is accepted as an alias for **`ivl`** (including `RTL_TOOL=iverilog` in the environment).
 
 **`run_all_content_gate.sh`** does the same flow with **gate-level** simulation only: **`make vcs_gate`** or **`make irun_gate`**. **`--rtl-tool`** must be **`vcs`** (default) or **`irun`** (no Icarus gate target).
 
@@ -240,12 +284,12 @@ Place test assets under each module (e.g. `lena256.bmp`, `raw_to_bgr/lena256_rgb
 ```shell
 cd Image_Processing_in_C_and_Verilog
 
-# RTL (default: ivl → make ivl_rtl)
+# RTL (default: vcs → make vs_rtl)
 ./run_all_content_rtl.sh
+./run_all_content_rtl.sh --rtl-tool vs
 ./run_all_content_rtl.sh --rtl-tool ivl
-./run_all_content_rtl.sh --rtl-tool vcs
 ./run_all_content_rtl.sh --rtl-tool irun
-./run_all_content_rtl.sh --rtl-tool=vcs
+RTL_TOOL=ivl ./run_all_content_rtl.sh
 RTL_TOOL=irun ./run_all_content_rtl.sh
 
 # Gate (default: vcs → make vcs_gate)
@@ -334,10 +378,10 @@ flowchart LR
 ### Image comparison
 * Python3
 
-### RTL simultion & Debug
-* Icarus Verilog
-* Cadence irun
-* Synopsys VCS
+### RTL simulation & debug
+* Synopsys VCS (`make vs_rtl` in each module’s `RTL/`)
+* Icarus Verilog (`make ivl_rtl`)
+* Cadence irun (`make irun_rtl`)
 * Synopsys Verdi
 * GTKWave
 

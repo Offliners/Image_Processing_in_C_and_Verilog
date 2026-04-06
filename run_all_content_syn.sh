@@ -78,6 +78,9 @@ done <<'MODULES'
 load_bmp_image
 raw_to_bgr
 raw_to_gray
+image_downscaling
+planar_bgr
+planar_gray
 bgr_to_gray
 binarization
 image_vertical_flip

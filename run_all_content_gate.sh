@@ -194,6 +194,9 @@ done <<'MODULES'
 load_bmp_image|load_bmp_image.o|../lena256.bmp|1
 raw_to_bgr|raw_to_bgr.o|../lena256_rgb.raw|1
 raw_to_gray|raw_to_gray.o|../lena256_gray.raw|1
+image_downscaling|image_downscale.o|../lena256.bmp|1
+planar_bgr|planar_bgr.o|../lena256.bmp|1
+planar_gray|planar_gray.o|../lena256.bmp|1
 bgr_to_gray|bgr2gray.o|../lena256.bmp|1
 binarization|binarization.o|../lena256.bmp|1
 image_vertical_flip|vertical_flip.o|../lena256.bmp|1

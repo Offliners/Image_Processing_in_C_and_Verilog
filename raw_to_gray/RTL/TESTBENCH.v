@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-`define CYCLE 10.0
+`define CYCLE 20.0
 
 `include "DEFINE.vh"
 `include "RAW_TO_GRAY.v"
@@ -39,6 +39,8 @@ assign algo_start = rst_n & in_valid;
 
 integer output_bmp_id;
 reg [18:0] bmp_written;
+
+initial bmp_written = 0;
 
 always #(`CYCLE/2) clk = ~clk;
 
@@ -111,14 +113,14 @@ initial begin
     #(100) $finish;
 end
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n)
         fifo_rd_en <= 1'b0;
     else
         fifo_rd_en <= !fifo_empty;
 end
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n)
         bmp_written <= 0;
     else if (fifo_rd_valid) begin

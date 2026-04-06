@@ -10,11 +10,13 @@
 # median_filter/lena256.bmp.
 #
 # Usage:
-#   ./run_all_content_rtl.sh                    # RTL, Icarus (make ivl_rtl), --rtl-tool ivl
-#   ./run_all_content_rtl.sh --rtl-tool vcs     # make vcs_rtl
+#   ./run_all_content_rtl.sh                    # RTL, VCS (make vs_rtl), default --rtl-tool vcs
+#   ./run_all_content_rtl.sh --rtl-tool ivl     # make ivl_rtl (Icarus)
+#   ./run_all_content_rtl.sh --rtl-tool vcs     # make vs_rtl (same as default)
+#   ./run_all_content_rtl.sh --rtl-tool vs      # alias for vcs -> vs_rtl
 #   ./run_all_content_rtl.sh --rtl-tool irun    # make irun_rtl
 #   ./run_all_content_rtl.sh --rtl-tool=vcs     # GNU-style
-#   RTL_TOOL=vcs ./run_all_content_rtl.sh       # default from env; CLI overrides
+#   RTL_TOOL=ivl ./run_all_content_rtl.sh       # default from env; CLI overrides
 #   RTL_TOOL=iverilog ./run_all_content_rtl.sh  # same as ivl (normalized)
 #   ./run_all_content_rtl.sh --skip-rtl         # C only (skips simulation and compare)
 #   ./run_all_content_rtl.sh --only median_filter
@@ -31,7 +33,7 @@ cd "$REPO_ROOT"
 
 SKIP_RTL=0
 ONLY=""
-RTL_TOOL="${RTL_TOOL:-ivl}"
+RTL_TOOL="${RTL_TOOL:-vcs}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -43,7 +45,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --rtl-tool)
       shift
-      [[ $# -ge 1 ]] || { echo "error: --rtl-tool requires ivl, vcs, or irun"; exit 2; }
+      [[ $# -ge 1 ]] || { echo "error: --rtl-tool requires ivl, vcs, vs, or irun"; exit 2; }
       RTL_TOOL="$1"
       ;;
     --rtl-tool=*)
@@ -62,11 +64,12 @@ done
 [[ -n "${RUN_RTL:-}" && "$RUN_RTL" == "0" ]] && SKIP_RTL=1
 
 [[ "$RTL_TOOL" == "iverilog" ]] && RTL_TOOL=ivl
+[[ "$RTL_TOOL" == "vs" ]] && RTL_TOOL=vcs
 
 case "$RTL_TOOL" in
   ivl|vcs|irun) ;;
   *)
-    echo "error: RTL_TOOL must be ivl, vcs, or irun (got: $RTL_TOOL)"
+    echo "error: RTL_TOOL must be ivl, vcs, vs, or irun (got: $RTL_TOOL)"
     exit 2
     ;;
 esac
@@ -101,7 +104,7 @@ record_fail() {
 rtl_make_target() {
   case "$RTL_TOOL" in
     ivl)  echo ivl_rtl ;;
-    vcs)  echo vcs_rtl ;;
+    vcs)  echo vs_rtl ;;
     irun) echo irun_rtl ;;
   esac
 }
@@ -204,6 +207,9 @@ done <<'MODULES'
 load_bmp_image|load_bmp_image.o|../lena256.bmp|1
 raw_to_bgr|raw_to_bgr.o|../lena256_rgb.raw|1
 raw_to_gray|raw_to_gray.o|../lena256_gray.raw|1
+image_downscaling|image_downscale.o|../lena256.bmp|1
+planar_bgr|planar_bgr.o|../lena256.bmp|1
+planar_gray|planar_gray.o|../lena256.bmp|1
 bgr_to_gray|bgr2gray.o|../lena256.bmp|1
 binarization|binarization.o|../lena256.bmp|1
 image_vertical_flip|vertical_flip.o|../lena256.bmp|1

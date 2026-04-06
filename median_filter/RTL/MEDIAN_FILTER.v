@@ -30,8 +30,12 @@ reg [`ADDR_WIDTH-1:0] oix;
 reg [31:0] ibi;
 reg [31:0] obi;
 reg [`BYTE_WIDTH-1:0] hdr [0:`BMP_HEADER_SIZE-1];
+// Infer as block memory where supported; avoids megabit FF arrays in some flows.
+(* ram_style = "block" *)
 reg [`BYTE_WIDTH-1:0] L0 [0:RB-1];
+(* ram_style = "block" *)
 reg [`BYTE_WIDTH-1:0] L1 [0:RB-1];
+(* ram_style = "block" *)
 reg [`BYTE_WIDTH-1:0] L2 [0:RB-1];
 
 
@@ -68,13 +72,77 @@ wire [31:0] need_k = bod ? obi : (((oy_b + 32'd1) * `BMP_WIDTH + (ox_b + 32'd1))
 wire out_ok = (st == S_STREAM) && (obi <= PIXEL_LAST) && (ibi > need_k);
 
 reg [`BYTE_WIDTH-1:0] out_val;
-integer dy, dx, wj, ui, uj, ix;
-integer sorted_pass;
+integer dy, dx, wj, ix;
 reg [`BYTE_WIDTH-1:0] wb [0:8];
 reg [`BYTE_WIDTH-1:0] wg [0:8];
 reg [`BYTE_WIDTH-1:0] wr [0:8];
-reg [10:0] sum_i, sum_j;
 reg [`BYTE_WIDTH-1:0] tmp;
+
+// Batcher odd-even mergesort (merge-sort class), n=9 — one network per channel (BGR).
+task ce_b;
+    input integer ii;
+    input integer jj;
+    begin
+        if (wb[ii] > wb[jj]) begin
+            tmp = wb[ii]; wb[ii] = wb[jj]; wb[jj] = tmp;
+        end
+    end
+endtask
+task ce_g;
+    input integer ii;
+    input integer jj;
+    begin
+        if (wg[ii] > wg[jj]) begin
+            tmp = wg[ii]; wg[ii] = wg[jj]; wg[jj] = tmp;
+        end
+    end
+endtask
+task ce_r;
+    input integer ii;
+    input integer jj;
+    begin
+        if (wr[ii] > wr[jj]) begin
+            tmp = wr[ii]; wr[ii] = wr[jj]; wr[jj] = tmp;
+        end
+    end
+endtask
+
+task sort9_merge_net;
+    begin
+        ce_b(0, 1); ce_b(2, 3); ce_b(4, 5); ce_b(6, 7);
+        ce_b(0, 2); ce_b(1, 3); ce_b(4, 6); ce_b(5, 7);
+        ce_b(1, 2); ce_b(5, 6);
+        ce_b(0, 4); ce_b(1, 5); ce_b(2, 6); ce_b(3, 7);
+        ce_b(2, 4); ce_b(3, 5);
+        ce_b(1, 2); ce_b(3, 4); ce_b(5, 6);
+        ce_b(0, 8); ce_b(4, 8);
+        ce_b(2, 4); ce_b(3, 5);
+        ce_b(6, 8);
+        ce_b(1, 2); ce_b(3, 4); ce_b(5, 6); ce_b(7, 8);
+
+        ce_g(0, 1); ce_g(2, 3); ce_g(4, 5); ce_g(6, 7);
+        ce_g(0, 2); ce_g(1, 3); ce_g(4, 6); ce_g(5, 7);
+        ce_g(1, 2); ce_g(5, 6);
+        ce_g(0, 4); ce_g(1, 5); ce_g(2, 6); ce_g(3, 7);
+        ce_g(2, 4); ce_g(3, 5);
+        ce_g(1, 2); ce_g(3, 4); ce_g(5, 6);
+        ce_g(0, 8); ce_g(4, 8);
+        ce_g(2, 4); ce_g(3, 5);
+        ce_g(6, 8);
+        ce_g(1, 2); ce_g(3, 4); ce_g(5, 6); ce_g(7, 8);
+
+        ce_r(0, 1); ce_r(2, 3); ce_r(4, 5); ce_r(6, 7);
+        ce_r(0, 2); ce_r(1, 3); ce_r(4, 6); ce_r(5, 7);
+        ce_r(1, 2); ce_r(5, 6);
+        ce_r(0, 4); ce_r(1, 5); ce_r(2, 6); ce_r(3, 7);
+        ce_r(2, 4); ce_r(3, 5);
+        ce_r(1, 2); ce_r(3, 4); ce_r(5, 6);
+        ce_r(0, 8); ce_r(4, 8);
+        ce_r(2, 4); ce_r(3, 5);
+        ce_r(6, 8);
+        ce_r(1, 2); ce_r(3, 4); ce_r(5, 6); ce_r(7, 8);
+    end
+endtask
 
 always @(*) begin
     out_val = 0;
@@ -96,24 +164,8 @@ always @(*) begin
                     wj = wj + 1;
                 end
             end
-            ui = 0;
-            while (ui < 9) begin
-                sorted_pass = 1;
-                for (uj = ui + 1; uj < 9; uj = uj + 1) begin
-                    sum_i = {3'd0, wb[ui]} + {3'd0, wg[ui]} + {3'd0, wr[ui]};
-                    sum_j = {3'd0, wb[uj]} + {3'd0, wg[uj]} + {3'd0, wr[uj]};
-                    if (sum_i > sum_j) begin
-                        sorted_pass = 0;
-                        tmp = wb[ui]; wb[ui] = wb[uj]; wb[uj] = tmp;
-                        tmp = wg[ui]; wg[ui] = wg[uj]; wg[uj] = tmp;
-                        tmp = wr[ui]; wr[ui] = wr[uj]; wr[uj] = tmp;
-                    end
-                end
-                if (sorted_pass)
-                    ui = 9;
-                else
-                    ui = ui + 1;
-            end
+            // Per-channel median: Batcher odd-even mergesort (same ordering as C merge_sort_u8).
+            sort9_merge_net;
             if (och == 32'd0)
                 out_val = wb[4];
             else if (och == 32'd1)

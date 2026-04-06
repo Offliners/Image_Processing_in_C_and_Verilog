@@ -17,7 +17,7 @@ set target_library {slow.db}
 # (A) Global Parameters
 #======================================================
 set DESIGN "BGR2GRAY"
-set CYCLE 20
+set CYCLE 20.0
 set INPUT_DLY [expr 0.5*$CYCLE]
 set OUTPUT_DLY [expr 0.5*$CYCLE]
 
@@ -66,7 +66,8 @@ check_timing
 #======================================================
 #  (E) Optimization
 #======================================================
-check_design > Report/$DESIGN\.check
+# LINT-99: full check_design listing (tee to Report/ and syn.log)
+redirect -tee -file Report/${DESIGN}.check { check_design }
 set_fix_multiple_port_nets -all -buffer_constants [get_designs *]
 set_fix_hold [all_clocks]
 compile_ultra

@@ -1,6 +1,6 @@
 # Generated layout aligned with NTU_DSP_in_VLSI_writeup/HW01/Makefile
 .PHONY: syn syn_dv read_dv_rtl read_ddc vcs_rtl vcs_gate irun_rtl irun_gate xrun_rtl xrun_gate \
-	nWave verdi_rtl verdi_gate clean help ivl_rtl gtk_wave
+	nWave verdi_rtl verdi_gate clean help ivl_rtl vs_rtl gtk_wave
 
 ######################################
 # Icarus Verilog (original flow)
@@ -30,7 +30,7 @@ log_file="vcs.log"
 syn_tcl="syn.tcl"
 syn_log="syn.log"
 
-num_CPU_cores=4
+num_CPU_cores=8
 TIMESCALE=-timescale=1ns/1fs
 TIMESCALE1=-timescale 1ns/1fs
 VERDI=/usr/cad/synopsys/verdi/
@@ -166,6 +166,8 @@ gtk_wave: $(TBOUTPUT)
 vcs_rtl:
 	${VCS_RTL_SIM}
 
+vs_rtl: vcs_rtl
+
 vcs_gate:
 	${VCS_GATE_SIM}
 
@@ -212,7 +214,7 @@ clean: clean_ivl
 
 help:
 	@echo "Icarus:  make ivl_rtl | gtk_wave"
-	@echo "VCS:     make vcs_rtl | vcs_gate"
+	@echo "VCS:     make vs_rtl | vcs_gate"
 	@echo "irun:    make irun_rtl | irun_gate"
 	@echo "xrun:    make xrun_rtl | xrun_gate"
 	@echo "DC:      make syn | syn_dv | read_dv_rtl | read_ddc"
